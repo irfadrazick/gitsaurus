@@ -41,6 +41,20 @@ pub fn classify(repo: &Path, changed: &Path) -> Option<ChangeKind> {
     Some(ChangeKind::Worktree)
 }
 
+/// Map key / watch root shared by `watch` and `unwatch`.
+pub fn watch_key(repo: &Path) -> PathBuf {
+    resolve_root(repo)
+}
+
+/// Drop the debouncer for `repo`, stopping its events.
+pub fn unwatch(watchers: &Mutex<HashMap<PathBuf, WatcherHandle>>, repo: &Path) {
+    let removed = watchers
+        .lock()
+        .unwrap_or_else(|e| e.into_inner())
+        .remove(&watch_key(repo));
+    drop(removed);
+}
+
 /// FSEvents reports canonical paths, so the root must be canonical too.
 pub fn resolve_root(repo: &Path) -> PathBuf {
     std::fs::canonicalize(repo).unwrap_or_else(|_| repo.to_path_buf())
@@ -52,7 +66,9 @@ pub fn watch(
     watchers: &Mutex<HashMap<PathBuf, WatcherHandle>>,
     repo: &Path,
 ) -> Result<(), String> {
-    let repo = resolve_root(repo);
+    // Payload carries the caller's original string; the frontend matches on it.
+    let original = repo.to_string_lossy().into_owned();
+    let repo = watch_key(repo);
     let repo = repo.as_path();
     let mut map = watchers.lock().unwrap_or_else(|e| e.into_inner());
     if map.contains_key(repo) {
@@ -76,7 +92,7 @@ pub fn watch(
                 let _ = app.emit(
                     "repo-changed",
                     RepoChanged {
-                        repo: root.to_string_lossy().into_owned(),
+                        repo: original.clone(),
                         kinds,
                     },
                 );
@@ -134,6 +150,22 @@ mod tests {
         if root != given {
             assert_eq!(classify(&given, &root.join(".git/HEAD")), None);
         }
+    }
+
+    #[test]
+    fn unwatch_with_noncanonical_path_empties_map() {
+        let tmp = tempfile::tempdir().unwrap();
+        let given = tmp.path().to_path_buf();
+        assert_eq!(watch_key(&given), watch_key(&resolve_root(&given)));
+        let watchers = Mutex::new(HashMap::new());
+        let mut d = new_debouncer(Duration::from_millis(300), |_: DebounceEventResult| {}).unwrap();
+        d.watcher().watch(&given, RecursiveMode::Recursive).unwrap();
+        watchers.lock().unwrap().insert(watch_key(&given), d);
+        // trailing slash / raw form must resolve to the same key
+        let mut slashed = given.clone().into_os_string();
+        slashed.push("/");
+        unwatch(&watchers, Path::new(&slashed));
+        assert!(watchers.lock().unwrap().is_empty());
     }
 
     #[test]

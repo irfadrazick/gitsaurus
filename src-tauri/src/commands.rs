@@ -1,6 +1,6 @@
 //! Tauri IPC surface. Every command takes `repo` first; blocking git work runs
 //! in `spawn_blocking`, and mutating commands hold the per-repo lock.
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::sync::Arc;
 
 use tauri::{AppHandle, State};
@@ -548,12 +548,7 @@ pub async fn watch_repo(app: AppHandle, state: State<'_, AppState>, repo: String
 
 #[tauri::command]
 pub async fn unwatch_repo(state: State<'_, AppState>, repo: String) -> GitResult<()> {
-    let removed = state
-        .watchers
-        .lock()
-        .unwrap_or_else(|e| e.into_inner())
-        .remove(&PathBuf::from(repo));
-    drop(removed);
+    watcher::unwatch(&state.watchers, Path::new(&repo));
     Ok(())
 }
 
