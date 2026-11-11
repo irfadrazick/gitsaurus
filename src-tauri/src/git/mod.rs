@@ -4,6 +4,7 @@ pub mod env;
 pub mod error;
 pub mod graph;
 pub mod log;
+pub mod ops;
 pub mod refs;
 pub mod repo;
 pub mod runner;
