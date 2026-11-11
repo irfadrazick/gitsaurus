@@ -105,11 +105,23 @@ pub fn abort_op(git: &Git) -> GitResult<()> {
 }
 
 pub fn resolve_conflict(git: &Git, path: &str, side: Side) -> GitResult<()> {
-    let flag = match side {
-        Side::Ours => "--ours",
-        Side::Theirs => "--theirs",
+    let (flag, stage) = match side {
+        Side::Ours => ("--ours", "2"),
+        Side::Theirs => ("--theirs", "3"),
     };
-    if git.run(&["checkout", flag, "--", path]).is_ok() {
+    // Only touch files that are actually unmerged; checkout would otherwise
+    // silently discard working-tree edits on a normal tracked file.
+    let raw = git.run_read(&["ls-files", "-u", "-z", "--", path])?;
+    let stages: Vec<&str> = raw
+        .split('\0')
+        .filter_map(|e| e.split_once('\t'))
+        .filter_map(|(meta, _)| meta.split_whitespace().nth(2))
+        .collect();
+    if stages.is_empty() {
+        return Err(failed(format!("Not in conflict: {path}")));
+    }
+    if stages.contains(&stage) {
+        git.run(&["checkout", flag, "--", path])?;
         git.run(&["add", "--", path])?;
     } else {
         // That side deleted the file, so resolving to it means removing it.

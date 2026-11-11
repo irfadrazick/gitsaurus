@@ -173,7 +173,7 @@ fn resolve_ours_when_theirs_deleted_file() {
 }
 
 #[test]
-fn resolve_theirs_when_ours_deleted_file() {
+fn resolve_ours_when_ours_deleted_file() {
     let r = TestRepo::new();
     r.write("f.txt", "base\n");
     r.commit_all("base");
@@ -219,4 +219,27 @@ fn failure_without_conflicts_propagates() {
     let r = diverged();
     let g = Git::new(r.path());
     assert!(merge(&g, "no-such-branch").is_err());
+}
+
+#[test]
+fn resolve_on_non_conflicted_dirty_file_errors_and_keeps_edit() {
+    let r = TestRepo::new();
+    r.write("f.txt", "base\n");
+    r.commit_all("base");
+    r.write("f.txt", "dirty\n");
+    let g = Git::new(r.path());
+    for side in [Side::Ours, Side::Theirs] {
+        assert!(resolve_conflict(&g, "f.txt", side).is_err());
+    }
+    assert_eq!(
+        std::fs::read_to_string(r.path().join("f.txt")).unwrap(),
+        "dirty\n"
+    );
+}
+
+#[test]
+fn resolve_on_unknown_path_errors() {
+    let r = diverged();
+    let g = Git::new(r.path());
+    assert!(resolve_conflict(&g, "nope.txt", Side::Ours).is_err());
 }
