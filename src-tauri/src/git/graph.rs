@@ -1,5 +1,10 @@
-use crate::git::log::RawCommit;
-use crate::git::types::Line;
+use std::collections::HashMap;
+
+use crate::git::error::GitResult;
+use crate::git::log::{RawCommit, read_log};
+use crate::git::refs::list_refs;
+use crate::git::runner::Git;
+use crate::git::types::{GraphCommit, Line, RefKind, RefLabel};
 
 /// Per-row drawing instructions; the renderer draws exactly this.
 #[derive(Debug, Clone, PartialEq)]
@@ -132,10 +137,132 @@ pub fn body_preview(body: &str) -> String {
     joined.chars().take(200).collect()
 }
 
+/// Per-repo graph cache that the frontend pages rows from.
+#[derive(Debug, Clone)]
+pub struct GraphData {
+    pub commits: Vec<GraphCommit>,
+    pub by_oid: HashMap<String, u32>,
+    pub max_lanes: u16,
+    pub head_index: Option<u32>,
+}
+
+pub fn build_graph(git: &Git) -> GitResult<GraphData> {
+    let raw = read_log(git)?;
+    let refs = list_refs(git)?;
+    let head_oid = refs.head.oid.as_deref();
+    let (rows, max_lanes) = layout(&raw, head_oid);
+
+    let mut labels: HashMap<String, Vec<RefLabel>> = HashMap::new();
+    let mut add = |oid: &str, kind, name: &str, is_head| {
+        labels.entry(oid.to_string()).or_default().push(RefLabel {
+            kind,
+            name: name.to_string(),
+            is_head,
+        });
+    };
+    // HEAD branch first, then the other local branches.
+    for b in refs.local.iter().filter(|b| b.is_head) {
+        add(&b.oid, RefKind::Local, &b.name, true);
+    }
+    for b in refs.local.iter().filter(|b| !b.is_head) {
+        add(&b.oid, RefKind::Local, &b.name, false);
+    }
+    for b in &refs.remote {
+        add(&b.oid, RefKind::Remote, &b.full_name, false);
+    }
+    for t in &refs.tags {
+        add(&t.oid, RefKind::Tag, &t.name, false);
+    }
+
+    let mut by_oid = HashMap::with_capacity(raw.len());
+    let mut head_index = None;
+    let commits: Vec<GraphCommit> = raw
+        .into_iter()
+        .zip(rows)
+        .enumerate()
+        .map(|(i, (c, r))| {
+            let index = i as u32;
+            by_oid.insert(c.oid.clone(), index);
+            if head_oid == Some(c.oid.as_str()) {
+                head_index = Some(index);
+            }
+            GraphCommit {
+                index,
+                short_oid: c.oid.chars().take(7).collect(),
+                refs: labels.remove(c.oid.as_str()).unwrap_or_default(),
+                body_preview: body_preview(&c.body),
+                oid: c.oid,
+                parents: c.parents,
+                author_name: c.author_name,
+                author_email: c.author_email,
+                author_time: c.author_time,
+                summary: c.summary,
+                lane: r.lane,
+                color: r.color,
+                into: r.into,
+                out: r.out,
+                pass: r.pass,
+                width: r.width,
+            }
+        })
+        .collect();
+    Ok(GraphData {
+        commits,
+        by_oid,
+        max_lanes,
+        head_index,
+    })
+}
+
+/// Case-insensitive match on summary/author, or oid prefix (query >= 4 hex chars).
+pub fn search(data: &GraphData, query: &str) -> Vec<u32> {
+    let q = query.trim().to_lowercase();
+    if q.is_empty() {
+        return Vec::new();
+    }
+    let hex = q.len() >= 4 && q.chars().all(|c| c.is_ascii_hexdigit());
+    data.commits
+        .iter()
+        .filter(|c| {
+            c.summary.to_lowercase().contains(&q)
+                || c.author_name.to_lowercase().contains(&q)
+                || c.author_email.to_lowercase().contains(&q)
+                || (hex && c.oid.starts_with(&q))
+        })
+        .map(|c| c.index)
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::git::log::RawCommit;
+
+    /// Shadows `super::layout` so every fixture is also checked for continuity.
+    fn layout(commits: &[RawCommit], head: Option<&str>) -> (Vec<RowLayout>, u16) {
+        let out = super::layout(commits, head);
+        assert_rows_continuous(&out.0);
+        out
+    }
+
+    fn assert_rows_continuous(rows: &[RowLayout]) {
+        use std::collections::BTreeSet;
+        for (i, w) in rows.windows(2).enumerate() {
+            let a: BTreeSet<(u16, u16)> = w[0]
+                .out
+                .iter()
+                .chain(&w[0].pass)
+                .map(|l| (l.lane, l.color))
+                .collect();
+            let b: BTreeSet<(u16, u16)> = w[1]
+                .into
+                .iter()
+                .chain(&w[1].pass)
+                .map(|l| (l.lane, l.color))
+                .collect();
+            assert_eq!(a, b, "rows {i} -> {} discontinuous", i + 1);
+        }
+    }
 
     fn c(oid: &str, parents: &[&str]) -> RawCommit {
         RawCommit {

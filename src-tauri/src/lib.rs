@@ -1,4 +1,5 @@
 pub mod git;
+pub mod state;
 
 use tauri::menu::Menu;
 
