@@ -1,11 +1,27 @@
 #![allow(dead_code)]
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::sync::Once;
 use tempfile::TempDir;
 
 /// Hermetic temporary git repository for integration tests.
 pub struct TestRepo {
     dir: TempDir,
+}
+
+static HERMETIC: Once = Once::new();
+
+/// Makes the production `Git` runner (which inherits the process env) ignore
+/// the developer's global and system git config.
+fn hermetic() {
+    HERMETIC.call_once(|| {
+        // SAFETY: call_once blocks concurrent callers until this finishes, and
+        // every test builds a TestRepo (calling hermetic()) before spawning git.
+        unsafe {
+            std::env::set_var("GIT_CONFIG_GLOBAL", "/dev/null");
+            std::env::set_var("GIT_CONFIG_NOSYSTEM", "1");
+        }
+    });
 }
 
 fn base_cmd(dir: &Path) -> Command {
@@ -31,6 +47,7 @@ fn run_in(dir: &Path, args: &[&str]) -> String {
 
 impl TestRepo {
     pub fn new() -> Self {
+        hermetic();
         let dir = tempfile::tempdir().unwrap();
         run_in(dir.path(), &["init", "-b", "main"]);
         run_in(dir.path(), &["config", "user.name", "Test User"]);
@@ -40,12 +57,14 @@ impl TestRepo {
     }
 
     pub fn bare() -> Self {
+        hermetic();
         let dir = tempfile::tempdir().unwrap();
         run_in(dir.path(), &["init", "--bare", "-b", "main"]);
         TestRepo { dir }
     }
 
     pub fn clone_of(other: &TestRepo) -> Self {
+        hermetic();
         let dir = tempfile::tempdir().unwrap();
         let src = other.path().to_str().unwrap();
         let dst = dir.path().to_str().unwrap();
