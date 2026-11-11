@@ -32,6 +32,18 @@ pub fn head(git: &Git) -> GitResult<Head> {
     })
 }
 
+/// Splits `origin/feature/x` into (`origin`, `feature/x`) using the longest matching remote name.
+pub(crate) fn split_remote<'a>(remotes: &'a [String], full: &'a str) -> Option<(&'a str, &'a str)> {
+    let r = remotes
+        .iter()
+        .filter(|r| {
+            full.strip_prefix(r.as_str())
+                .is_some_and(|s| s.starts_with('/'))
+        })
+        .max_by_key(|r| r.len())?;
+    Some((r.as_str(), &full[r.len() + 1..]))
+}
+
 pub fn list_refs(git: &Git) -> GitResult<Refs> {
     let head = head(git)?;
     let remotes: Vec<String> = git
@@ -71,22 +83,14 @@ pub fn list_refs(git: &Git) -> GitResult<Refs> {
                 is_head: is_head == "*",
             });
         } else if let Some(rest) = refname.strip_prefix("refs/remotes/") {
-            let Some(r) = remotes
-                .iter()
-                .filter(|r| {
-                    rest.strip_prefix(r.as_str())
-                        .is_some_and(|s| s.starts_with('/'))
-                })
-                .max_by_key(|r| r.len())
-            else {
+            let Some((r, name)) = split_remote(&remotes, rest) else {
                 continue;
             };
-            let name = &rest[r.len() + 1..];
             if name == "HEAD" {
                 continue;
             }
             remote.push(RemoteBranch {
-                remote: r.clone(),
+                remote: r.to_string(),
                 name: name.to_string(),
                 full_name: rest.to_string(),
                 oid: oid.to_string(),
