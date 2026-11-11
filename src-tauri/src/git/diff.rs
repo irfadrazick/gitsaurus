@@ -141,7 +141,7 @@ pub fn file_diff(
             ok.push(1);
             args.extend(["--no-index", "--", "/dev/null", path]);
         }
-        DiffSource::WorkingFile => return working_file(git, path, orig_path, context),
+        DiffSource::WorkingFile => return working_file(git, path, orig_path),
     }
     let text = git.run_ok_codes(&args, &ok)?;
     if too_large(&text) {
@@ -152,12 +152,7 @@ pub fn file_diff(
     Ok(parse_unified(path, orig_path, &text))
 }
 
-fn working_file(
-    git: &Git,
-    path: &str,
-    orig_path: Option<&str>,
-    context: u32,
-) -> GitResult<FileDiff> {
+fn working_file(git: &Git, path: &str, orig_path: Option<&str>) -> GitResult<FileDiff> {
     let mut d = empty(path, orig_path);
     let bytes =
         std::fs::read(git.repo().join(path)).map_err(|e| super::error::GitError::Failed {
@@ -174,7 +169,7 @@ fn working_file(
         return Ok(d);
     }
     let all: Vec<&str> = text.lines().collect();
-    let n = all.len().min(context as usize);
+    let n = all.len();
     if n == 0 {
         return Ok(d);
     }

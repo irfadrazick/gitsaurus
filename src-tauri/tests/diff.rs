@@ -223,3 +223,27 @@ fn working_file_emits_numbered_context_lines_and_flags_binary() {
     let b = file_diff(&g, "b.bin", None, &DiffSource::WorkingFile, 3).unwrap();
     assert!(b.binary && b.hunks.is_empty());
 }
+
+#[test]
+fn working_file_ignores_context_and_returns_whole_file() {
+    let r = TestRepo::new();
+    let body: String = (1..=25).map(|i| format!("row{i}\n")).collect();
+    r.write("w.txt", &body);
+    let d = file_diff(
+        &Git::new(r.path()),
+        "w.txt",
+        None,
+        &DiffSource::WorkingFile,
+        3,
+    )
+    .unwrap();
+    assert_eq!(d.hunks.len(), 1);
+    let h = &d.hunks[0];
+    assert_eq!((h.old_lines, h.new_lines), (25, 25));
+    assert_eq!(h.lines.len(), 25);
+    for (i, l) in h.lines.iter().enumerate() {
+        let n = i as u32 + 1;
+        assert_eq!((l.old_no, l.new_no), (Some(n), Some(n)));
+        assert_eq!(l.text, format!("row{n}"));
+    }
+}
