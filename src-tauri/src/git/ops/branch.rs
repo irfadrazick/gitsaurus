@@ -9,7 +9,7 @@ fn failed(message: impl Into<String>) -> GitError {
 }
 
 /// Rejects anything git could read as an option.
-fn safe_target(s: &str) -> GitResult<()> {
+pub(crate) fn safe_target(s: &str) -> GitResult<()> {
     if s.is_empty() || s.starts_with('-') {
         return Err(failed("Invalid ref"));
     }
