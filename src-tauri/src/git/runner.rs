@@ -70,6 +70,7 @@ impl Git {
             .args(args)
             .env("GIT_TERMINAL_PROMPT", "0")
             .env("LC_ALL", "C")
+            .env("GIT_LITERAL_PATHSPECS", "1")
             .stdin(if stdin.is_some() {
                 Stdio::piped()
             } else {

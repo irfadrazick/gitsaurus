@@ -133,3 +133,51 @@ fn blank_summary_rejected() {
         matches!(err, GitError::Failed { ref message, .. } if message == "Commit summary is empty")
     );
 }
+
+#[test]
+fn discard_with_glob_chars_touches_only_named_file() {
+    let r = TestRepo::new();
+    r.write("f[1].txt", "a\n");
+    r.write("f1.txt", "b\n");
+    r.commit_all("init");
+    let g = Git::new(r.path());
+    r.write("f[1].txt", "a2\n");
+    r.write("f1.txt", "b2\n");
+    r.write("g[1].txt", "x\n");
+    r.write("g1.txt", "y\n");
+
+    discard(&g, &s(&["f[1].txt", "g[1].txt"])).unwrap();
+    assert_eq!(
+        std::fs::read_to_string(r.path().join("f[1].txt")).unwrap(),
+        "a\n"
+    );
+    assert_eq!(
+        std::fs::read_to_string(r.path().join("f1.txt")).unwrap(),
+        "b2\n"
+    );
+    assert!(!r.path().join("g[1].txt").exists());
+    assert!(r.path().join("g1.txt").exists());
+}
+
+#[test]
+fn stage_with_glob_chars_stages_only_named_file() {
+    let r = TestRepo::new();
+    r.write("f[1].txt", "a\n");
+    r.write("f1.txt", "b\n");
+    let g = Git::new(r.path());
+    stage(&g, &s(&["f[1].txt"])).unwrap();
+    assert_eq!(status_of(&g, "f[1].txt").unwrap().0, "A");
+    assert_eq!(status_of(&g, "f1.txt").unwrap().0, ".");
+    unstage(&g, &s(&["f[1].txt"])).unwrap();
+    assert_eq!(status_of(&g, "f[1].txt").unwrap().0, ".");
+
+    r.git(&["add", "-A"]);
+    r.git(&["commit", "-q", "-m", "c"]);
+    r.write("f[1].txt", "a2\n");
+    r.write("f1.txt", "b2\n");
+    stage(&g, &s(&["f[1].txt"])).unwrap();
+    assert_eq!(status_of(&g, "f[1].txt").unwrap().0, "M");
+    assert_eq!(status_of(&g, "f1.txt").unwrap().0, ".");
+    unstage(&g, &s(&["f[1].txt"])).unwrap();
+    assert_eq!(status_of(&g, "f[1].txt").unwrap().0, ".");
+}
