@@ -243,3 +243,20 @@ fn resolve_on_unknown_path_errors() {
     let g = Git::new(r.path());
     assert!(resolve_conflict(&g, "nope.txt", Side::Ours).is_err());
 }
+
+#[test]
+fn resolve_on_directory_prefix_errors_and_keeps_conflict() {
+    let r = TestRepo::new();
+    r.write("sub/a.txt", "base\n");
+    r.commit_all("base");
+    r.git(&["checkout", "-b", "topic"]);
+    r.write("sub/a.txt", "topic\n");
+    r.commit_all("topic");
+    r.git(&["checkout", "main"]);
+    r.write("sub/a.txt", "main\n");
+    r.commit_all("main");
+    let g = Git::new(r.path());
+    assert_eq!(merge(&g, "topic").unwrap(), OpOutcome::Conflicts);
+    assert!(resolve_conflict(&g, "sub", Side::Theirs).is_err());
+    assert_eq!(conflicted(&g), vec!["sub/a.txt"]);
+}

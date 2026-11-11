@@ -115,6 +115,8 @@ pub fn resolve_conflict(git: &Git, path: &str, side: Side) -> GitResult<()> {
     let stages: Vec<&str> = raw
         .split('\0')
         .filter_map(|e| e.split_once('\t'))
+        // The pathspec also matches directory prefixes; keep exact paths only.
+        .filter(|(_, p)| *p == path)
         .filter_map(|(meta, _)| meta.split_whitespace().nth(2))
         .collect();
     if stages.is_empty() {
