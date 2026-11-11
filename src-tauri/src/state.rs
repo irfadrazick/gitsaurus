@@ -3,13 +3,13 @@ use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 use crate::git::graph::GraphData;
+use crate::watcher::WatcherHandle;
 
 #[derive(Default)]
 pub struct AppState {
     pub graphs: Mutex<HashMap<PathBuf, Arc<GraphData>>>,
     pub locks: Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>,
-    /// Placeholder value type; Task 11 replaces it with the watcher handle.
-    pub watchers: Mutex<HashMap<PathBuf, ()>>,
+    pub watchers: Mutex<HashMap<PathBuf, WatcherHandle>>,
 }
 
 impl AppState {
