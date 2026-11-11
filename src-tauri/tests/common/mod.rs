@@ -73,6 +73,15 @@ impl TestRepo {
         run_in(self.path(), args)
     }
 
+    /// Runs git, ignoring a non-zero exit (e.g. a conflicting merge); returns stdout.
+    pub fn git_allow_fail(&self, args: &[&str]) -> String {
+        let out = base_cmd(self.path())
+            .args(args)
+            .output()
+            .expect("spawn git");
+        String::from_utf8_lossy(&out.stdout).into_owned()
+    }
+
     /// Stages everything, commits, returns the new commit oid.
     pub fn commit_all(&self, msg: &str) -> String {
         self.git(&["add", "-A"]);
