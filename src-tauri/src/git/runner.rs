@@ -29,6 +29,11 @@ impl Git {
         self.exec(args, &[0], None, &[("GIT_OPTIONAL_LOCKS", "0")])
     }
 
+    /// Read-only command that tolerates the given non-zero exit codes.
+    pub fn run_read_ok_codes(&self, args: &[&str], ok: &[i32]) -> GitResult<String> {
+        self.exec(args, ok, None, &[("GIT_OPTIONAL_LOCKS", "0")])
+    }
+
     pub fn run_ok_codes(&self, args: &[&str], ok: &[i32]) -> GitResult<String> {
         self.exec(args, ok, None, &[])
     }

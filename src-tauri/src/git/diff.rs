@@ -143,7 +143,7 @@ pub fn file_diff(
         }
         DiffSource::WorkingFile => return working_file(git, path, orig_path),
     }
-    let text = git.run_ok_codes(&args, &ok)?;
+    let text = git.run_read_ok_codes(&args, &ok)?;
     if too_large(&text) {
         let mut d = empty(path, orig_path);
         d.too_large = true;

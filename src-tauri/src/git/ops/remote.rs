@@ -43,7 +43,7 @@ pub fn fetch_all(git: &Git) -> GitResult<()> {
 }
 
 fn config_is_set(git: &Git, key: &str) -> GitResult<bool> {
-    let out = git.run_ok_codes(&["config", "--get", key], &[0, 1])?;
+    let out = git.run_read_ok_codes(&["config", "--get", key], &[0, 1])?;
     Ok(!out.trim().is_empty())
 }
 

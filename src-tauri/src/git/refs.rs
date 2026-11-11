@@ -20,8 +20,8 @@ pub fn parse_track(s: &str) -> (u32, u32, bool) {
 }
 
 pub fn head(git: &Git) -> GitResult<Head> {
-    let branch = git.run_ok_codes(&["symbolic-ref", "-q", "--short", "HEAD"], &[0, 1])?;
-    let oid = git.run_ok_codes(&["rev-parse", "-q", "--verify", "HEAD"], &[0, 1])?;
+    let branch = git.run_read_ok_codes(&["symbolic-ref", "-q", "--short", "HEAD"], &[0, 1])?;
+    let oid = git.run_read_ok_codes(&["rev-parse", "-q", "--verify", "HEAD"], &[0, 1])?;
     let non_empty = |s: String| {
         let t = s.trim();
         (!t.is_empty()).then(|| t.to_string())

@@ -25,7 +25,7 @@ pub struct RepoChanged {
 pub type WatcherHandle = Debouncer<RecommendedWatcher>;
 
 pub fn classify(repo: &Path, changed: &Path) -> Option<ChangeKind> {
-    let rel = changed.strip_prefix(repo).unwrap_or(changed);
+    let rel = changed.strip_prefix(repo).ok()?;
     let mut comps = rel.components();
     if comps.next().is_some_and(|c| c.as_os_str() == ".git") {
         let second = comps.next().map(|c| c.as_os_str().to_owned());
@@ -41,12 +41,19 @@ pub fn classify(repo: &Path, changed: &Path) -> Option<ChangeKind> {
     Some(ChangeKind::Worktree)
 }
 
+/// FSEvents reports canonical paths, so the root must be canonical too.
+pub fn resolve_root(repo: &Path) -> PathBuf {
+    std::fs::canonicalize(repo).unwrap_or_else(|_| repo.to_path_buf())
+}
+
 /// Start watching `repo` (idempotent per path); emits "repo-changed".
 pub fn watch(
     app: &AppHandle,
     watchers: &Mutex<HashMap<PathBuf, WatcherHandle>>,
     repo: &Path,
 ) -> Result<(), String> {
+    let repo = resolve_root(repo);
+    let repo = repo.as_path();
     let mut map = watchers.lock().unwrap_or_else(|e| e.into_inner());
     if map.contains_key(repo) {
         return Ok(());
@@ -104,6 +111,29 @@ mod tests {
     fn git_dir_is_git() {
         assert_eq!(c("/r/.git/refs/heads/main"), Some(ChangeKind::Git));
         assert_eq!(c("/r/.git/HEAD"), Some(ChangeKind::Git));
+    }
+
+    #[test]
+    fn outside_repo_is_ignored() {
+        assert_eq!(c("/elsewhere/src/a.rs"), None);
+    }
+
+    #[test]
+    fn canonical_root_classifies_git_events_for_symlinked_input() {
+        let tmp = tempfile::tempdir().unwrap();
+        let given = tmp.path().to_path_buf();
+        let root = resolve_root(&given);
+        assert_eq!(root, std::fs::canonicalize(&given).unwrap());
+        // FSEvents reports canonical paths.
+        assert_eq!(
+            classify(&root, &root.join(".git/HEAD")),
+            Some(ChangeKind::Git)
+        );
+        assert_eq!(classify(&root, &root.join(".git/objects/ab/cd")), None);
+        // On macOS tempdirs live under /var -> /private/var, so the raw root differs.
+        if root != given {
+            assert_eq!(classify(&given, &root.join(".git/HEAD")), None);
+        }
     }
 
     #[test]
