@@ -1,3 +1,5 @@
+pub mod git;
+
 use tauri::menu::Menu;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
