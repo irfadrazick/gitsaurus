@@ -89,7 +89,7 @@
         <button class="sec" onclick={() => toggle(key)} aria-expanded={open(key)}>
           <span class="chev" class:closed={!open(key)}><Icon name="chevronDown" size={12} /></span>
           <span class="stitle">{title}</span>
-          <span class="count">{count}</span>
+          <span class="count" class:zero={count === 0}>{count}</span>
         </button>
       {/snippet}
 
@@ -202,7 +202,7 @@
               oncontextmenu={(e) => showWorktree(e, w)}
             >
               <span class="check">{#if w.isCurrent}<Icon name="check" size={12} stroke={2} />{/if}</span>
-              <span class="name" class:mono={!w.branch}>{worktreeLabel(w)}</span>
+              <span class="name wtname" class:mono={!w.branch}>{worktreeLabel(w)}</span>
               {#if w.missing}<span class="badge gone">missing</span>{/if}
               <span class="folder">
                 <Icon name={w.isMain ? 'home' : 'folder'} size={12} />
@@ -239,19 +239,25 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 4px 6px 12px;
+    padding: 0 6px 12px;
   }
+  /* Section headers: a full-width rule above each one, and they stay pinned while
+     their list scrolls under them. */
   .sec {
+    position: sticky;
+    top: 0;
+    z-index: 1;
     display: flex;
     align-items: center;
     gap: 6px;
-    width: 100%;
-    height: 28px;
-    margin-top: 6px;
-    padding: 0 6px;
+    width: calc(100% + 12px);
+    height: 32px;
+    margin: 6px -6px 2px;
+    padding: 0 12px;
     border: 0;
-    border-radius: var(--radius-sm);
-    background: transparent;
+    border-top: 1px solid var(--line);
+    border-radius: 0;
+    background: var(--panel);
     color: var(--muted);
     font-size: var(--fs-xs);
     font-weight: 600;
@@ -259,10 +265,22 @@
     text-transform: uppercase;
     text-align: left;
   }
+  .sec:first-child {
+    margin-top: 0;
+    border-top-color: transparent;
+  }
   .sec:hover:not(:disabled) {
     color: var(--text);
     border: 0;
-    background: transparent;
+    border-top: 1px solid var(--line);
+    background: color-mix(in srgb, var(--text) 5%, var(--panel));
+  }
+  .sec:first-child:hover:not(:disabled) {
+    border-top-color: transparent;
+  }
+  .sec:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
   }
   .chev {
     display: inline-flex;
@@ -278,6 +296,10 @@
   .count {
     font-weight: 500;
     letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .count.zero {
+    opacity: 0.5;
   }
   .remote-name {
     height: 24px;
@@ -349,13 +371,16 @@
   .row.selected .folder {
     color: var(--sel-muted);
   }
+  /* The branch keeps its width; the folder name gives way first. */
+  .name.wtname {
+    flex: 1 1 auto;
+  }
   .folder {
-    flex: 0 1 auto;
+    flex: 0 6 auto;
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    max-width: 50%;
-    min-width: 0;
+    min-width: 20px;
     color: var(--muted);
     font-size: var(--fs-sm);
   }
