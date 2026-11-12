@@ -113,9 +113,16 @@
     if (m !== null) await runOp('Stash', () => api.stashPush(p, m.trim() || undefined));
   }
 
+  // The Search button toggles: pressed while the bar is visible over the graph, click again to close.
+  const searchShown = $derived(ui.searchOpen && repo.centre.kind === 'graph');
   function search() {
+    if (searchShown) {
+      ui.searchOpen = false;
+      return;
+    }
     repo.showGraph();
     ui.searchOpen = true;
+    ui.searchFocus++;
   }
 </script>
 
@@ -168,7 +175,7 @@
         {/if}
         <span>Pop</span>
       </button>
-      <button class="tb" onclick={search} title="Search commits (⌘F)">
+      <button class="tb" class:on={searchShown} aria-pressed={searchShown} onclick={search} title={searchShown ? 'Close search (Esc)' : 'Search commits (⌘F)'}>
         <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3.5 3.5" /></svg>
         <span>Search</span>
       </button>
@@ -267,6 +274,12 @@
   .tb:hover:not(:disabled),
   .caret:hover {
     background: rgb(255 255 255 / 0.06);
+  }
+  .tb.on {
+    background: rgb(255 255 255 / 0.1);
+  }
+  .tb.on span {
+    color: var(--text);
   }
   .tb:disabled {
     opacity: 0.4;

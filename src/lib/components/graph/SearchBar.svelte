@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, untrack } from 'svelte';
+  import { untrack } from 'svelte';
   import * as api from '../../api';
   import { repo } from '../../state/repo.svelte';
   import { ui } from '../../state/ui.svelte';
@@ -26,7 +26,11 @@
   let seq = 0;
   let lastQuery = '';
 
-  onMount(() => focusInput());
+  // Focus on open, and again whenever the toolbar asks (ui.searchFocus).
+  $effect(() => {
+    void ui.searchFocus;
+    focusInput();
+  });
 
   function focusInput() {
     input?.focus();
