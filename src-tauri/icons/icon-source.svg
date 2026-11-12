@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<defs>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3039"/><stop offset="1" stop-color="#15181d"/></linearGradient>
+<linearGradient id="skin" gradientUnits="userSpaceOnUse" x1="0" y1="300" x2="0" y2="1000"><stop offset="0" stop-color="#4fcdb8"/><stop offset="1" stop-color="#2a9585"/></linearGradient>
+<clipPath id="sq"><rect x="100" y="100" width="824" height="824" rx="186"/></clipPath>
+</defs>
+<rect x="100" y="100" width="824" height="824" rx="186" fill="url(#bg)"/>
+<g clip-path="url(#sq)">
+<g transform="translate(-44 46)">
+  <!-- branch (behind head), fork, leaves, commit rings -->
+  <path d="M 560 500 L 880 420" stroke="#a87a45" stroke-width="26" stroke-linecap="round"/>
+  <path d="M 812 437 C 832 404 826 356 834 326" stroke="#a87a45" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <ellipse cx="846" cy="452" rx="44" ry="18" fill="#56d364" transform="rotate(28 846 452)"/>
+  <ellipse cx="790" cy="372" rx="34" ry="15" fill="#3fb950" transform="rotate(-55 790 372)"/>
+  <circle cx="884" cy="418" r="30" fill="#15181d" stroke="#e3b341" stroke-width="18"/>
+  <circle cx="836" cy="308" r="30" fill="#15181d" stroke="#a371f7" stroke-width="18"/>
+  <!-- neck, then head with a throat that flows into it -->
+  <path d="M 110 1040 C 190 790 290 580 430 470" stroke="url(#skin)" stroke-width="150" fill="none" stroke-linecap="round"/>
+  <path fill="url(#skin)" d="M 360 470 C 350 360 450 300 560 304 C 660 308 740 336 776 384 C 800 418 790 462 752 478 C 700 500 620 506 560 520 C 490 536 410 574 350 650 L 300 600 Z"/>
+  <!-- mouth -->
+  <path d="M 784 446 C 730 466 660 476 600 480" stroke="#1f7568" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <!-- the bitten part of the branch, in front of the jaw -->
+  <path d="M 640 480 L 792 442" stroke="#a87a45" stroke-width="26" stroke-linecap="round"/>
+  <g fill="#f3ead2"><rect x="716" y="434" width="14" height="22" rx="5"/><rect x="740" y="428" width="14" height="22" rx="5"/><rect x="692" y="440" width="14" height="22" rx="5"/></g>
+  <!-- nostril -->
+  
+  <ellipse cx="648" cy="336" rx="14" ry="8" fill="#1f7568"/>
+</g>
+</g>
+<rect x="100.5" y="100.5" width="823" height="823" rx="185.5" fill="none" stroke="#ffffff" stroke-opacity="0.07"/>
+</svg>
