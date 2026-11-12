@@ -589,6 +589,26 @@ pub async fn open_in_editor(repo: String, path: String, editor_command: String) 
 }
 
 /// `path` is absolute here (matches `open -R <path>`).
+// ---- worktrees ----
+
+#[tauri::command]
+pub async fn remove_worktree(
+    state: State<'_, AppState>,
+    repo: String,
+    path: String,
+    force: bool,
+) -> GitResult<()> {
+    write(state.inner(), repo, move |git| {
+        g::remove_worktree(&git, &path, force)
+    })
+    .await
+}
+
+#[tauri::command]
+pub async fn prune_worktrees(state: State<'_, AppState>, repo: String) -> GitResult<()> {
+    write(state.inner(), repo, move |git| g::prune_worktrees(&git)).await
+}
+
 #[tauri::command]
 pub async fn reveal_in_finder(repo: String, path: String) -> GitResult<()> {
     let p = Path::new(&path);

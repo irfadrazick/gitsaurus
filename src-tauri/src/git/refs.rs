@@ -1,6 +1,7 @@
 use super::error::GitResult;
 use super::runner::Git;
 use super::types::{Branch, Head, Refs, RemoteBranch, Stash, Tag};
+use super::worktrees::list_worktrees;
 
 /// Parses `%(upstream:track)` output into (ahead, behind, gone).
 pub fn parse_track(s: &str) -> (u32, u32, bool) {
@@ -137,5 +138,6 @@ pub fn list_refs(git: &Git) -> GitResult<Refs> {
         remotes,
         tags,
         stashes,
+        worktrees: list_worktrees(git)?,
     })
 }

@@ -74,6 +74,8 @@ pub fn run() {
             commands::watch_repo,
             commands::unwatch_repo,
             commands::open_in_editor,
+            commands::remove_worktree,
+            commands::prune_worktrees,
             commands::reveal_in_finder,
         ])
         .run(tauri::generate_context!())

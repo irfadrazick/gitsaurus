@@ -19,7 +19,7 @@ export type Centre =
     };
 
 const emptyState = (): RepoState => ({ head: { branch: null, oid: null }, operation: null, files: [] });
-const emptyRefs = (): Refs => ({ head: { branch: null, oid: null }, local: [], remote: [], remotes: [], tags: [], stashes: [] });
+const emptyRefs = (): Refs => ({ head: { branch: null, oid: null }, local: [], remote: [], remotes: [], tags: [], stashes: [], worktrees: [] });
 const emptySummary = (): GraphSummary => ({ total: 0, maxLanes: 0, headIndex: null });
 
 function report(title: string, e: unknown) {

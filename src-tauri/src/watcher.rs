@@ -36,8 +36,19 @@ pub fn classify(repo: &Path, changed: &Path) -> Option<ChangeKind> {
 }
 
 /// Kind of a change at `rel` inside a git dir: objects/, logs/ and *.lock are noise.
+/// Under worktrees/ (other worktrees' private dirs) only a worktree being added or
+/// removed, or switching its HEAD, matters: that is what the Worktrees list shows.
 fn git_dir_kind(rel: &Path) -> Option<ChangeKind> {
     let first = rel.components().next().map(|c| c.as_os_str().to_owned());
+    if first.as_deref().is_some_and(|n| n == "worktrees") {
+        let parts: Vec<_> = rel.components().map(|c| c.as_os_str()).collect();
+        let listed = match parts.len() {
+            2 => true,
+            3 => parts[2] == "HEAD",
+            _ => false,
+        };
+        return listed.then_some(ChangeKind::Git);
+    }
     let ignored_dir = first
         .as_deref()
         .is_some_and(|n| n == "objects" || n == "logs");
@@ -71,13 +82,6 @@ impl WatchRoots {
             .min_by_key(|rel| rel.components().count())?;
         // Under the common dir, worktrees/<name> is another worktree's private git dir
         // (ours, if this is a linked worktree, matched above as the more specific dir).
-        if rel
-            .components()
-            .next()
-            .is_some_and(|c| c.as_os_str() == "worktrees")
-        {
-            return None;
-        }
         git_dir_kind(rel)
     }
 
@@ -204,6 +208,14 @@ mod tests {
     }
 
     #[test]
+    fn main_repo_sees_worktrees_come_and_go_but_not_their_churn() {
+        assert_eq!(c("/r/.git/worktrees/wt"), Some(ChangeKind::Git));
+        assert_eq!(c("/r/.git/worktrees/wt/HEAD"), Some(ChangeKind::Git));
+        assert_eq!(c("/r/.git/worktrees/wt/index"), None);
+        assert_eq!(c("/r/.git/worktrees/wt/logs/HEAD"), None);
+    }
+
+    #[test]
     fn git_dir_is_git() {
         assert_eq!(c("/r/.git/refs/heads/main"), Some(ChangeKind::Git));
         assert_eq!(c("/r/.git/HEAD"), Some(ChangeKind::Git));
@@ -274,8 +286,12 @@ mod tests {
         assert_eq!(k("/main/.git/worktrees/wt/logs/HEAD"), None);
         assert_eq!(k("/main/.git/worktrees/wt/index.lock"), None);
         assert_eq!(k("/main/.git/refs/heads/x.lock"), None);
-        // Other worktrees' private dirs are not ours.
-        assert_eq!(k("/main/.git/worktrees/other/HEAD"), None);
+        // Other worktrees' private dirs are not ours, except what the Worktrees list
+        // shows: one being added or removed, or switching branch.
+        assert_eq!(k("/main/.git/worktrees/other/index"), None);
+        assert_eq!(k("/main/.git/worktrees/other/HEAD"), Some(ChangeKind::Git));
+        assert_eq!(k("/main/.git/worktrees/new"), Some(ChangeKind::Git));
+        assert_eq!(k("/main/.git/worktrees/new/HEAD.lock"), None);
         // The main worktree's files are not ours either.
         assert_eq!(k("/main/src/a.rs"), None);
         // The private git dir is inside the common dir, so only the latter is registered.

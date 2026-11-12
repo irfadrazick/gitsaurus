@@ -10,6 +10,7 @@ pub mod repo;
 pub mod runner;
 pub mod status;
 pub mod types;
+pub mod worktrees;
 
 pub use details::commit_details;
 pub use diff::{file_diff, parse_unified};
@@ -22,3 +23,4 @@ pub use repo::open_repo;
 pub use runner::{Git, cancel_network};
 pub use status::{operation, parse_porcelain_v2, repo_state};
 pub use types::*;
+pub use worktrees::{list_worktrees, parse_worktrees, prune_worktrees, remove_worktree};

@@ -9,8 +9,13 @@ export interface Branch {
 export interface RemoteBranch { remote: string; name: string; fullName: string; oid: string }
 export interface Tag { name: string; oid: string; annotated: boolean }
 export interface Stash { index: number; message: string; oid: string }
+export interface Worktree {
+  path: string; name: string; branch: string | null; oid: string | null;
+  isMain: boolean; isCurrent: boolean; missing: boolean; locked: boolean;
+}
 export interface Refs {
   head: Head; local: Branch[]; remote: RemoteBranch[]; remotes: string[]; tags: Tag[]; stashes: Stash[];
+  worktrees: Worktree[];
 }
 
 export type RefKind = 'local' | 'remote' | 'tag';

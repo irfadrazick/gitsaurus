@@ -109,3 +109,15 @@ export function remoteBranchMenu(c: MenuContext): MenuItem[] {
     { id: 'copyBranchName', label: 'Copy branch name', separatorBefore: true },
   ];
 }
+
+/** Menu for a row in the Worktrees list. */
+export function worktreeMenu(w: { isMain: boolean; isCurrent: boolean; missing: boolean }): MenuItem[] {
+  return [
+    { id: 'open', label: 'Open', disabled: w.isCurrent || w.missing },
+    { id: 'reveal', label: 'Show in Finder', disabled: w.missing },
+    { id: 'copyPath', label: 'Copy path' },
+    w.missing
+      ? { id: 'prune', label: 'Clean up', separatorBefore: true }
+      : { id: 'remove', label: 'Remove worktree…', danger: true, separatorBefore: true, disabled: w.isMain || w.isCurrent },
+  ];
+}
