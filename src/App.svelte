@@ -7,6 +7,8 @@
   import GraphView from './lib/components/graph/GraphView.svelte';
   import Columns from './lib/components/layout/Columns.svelte';
   import ContextMenu from './lib/components/layout/ContextMenu.svelte';
+  import Settings from './lib/components/layout/Settings.svelte';
+  import Toolbar from './lib/components/layout/Toolbar.svelte';
   import Modal from './lib/components/layout/Modal.svelte';
   import Toasts from './lib/components/layout/Toasts.svelte';
   import RefsColumn from './lib/components/refs/RefsColumn.svelte';
@@ -122,6 +124,7 @@
       {#if repo.path}
         <!-- GraphView stays mounted under the diff so its scroll position and page cache survive. -->
         <div class="centre">
+          <Toolbar />
           <ConflictBanner />
           <div class="stack">
             <div class="layer" class:covered={repo.centre.kind === 'diff'} inert={repo.centre.kind === 'diff'}>
@@ -149,6 +152,7 @@
     {/snippet}
   </Columns>
 </main>
+{#if ui.settingsOpen}<Settings />{/if}
 <Modal />
 <Toasts />
 <ContextMenu />
