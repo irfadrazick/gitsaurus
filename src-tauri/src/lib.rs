@@ -14,6 +14,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .setup(|app| {
+            // Resolve the login-shell PATH/SSH_AUTH_SOCK off the launch path; the first git
+            // call waits on this (OnceLock) instead of spawning the shell itself.
+            std::thread::spawn(|| {
+                git::git_env();
+            });
             // Default app menu so Cmd+C/V/A work in text inputs.
             let menu = Menu::default(app.handle())?;
             app.set_menu(menu)?;
