@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import * as api from '../../api';
   import { modalState } from '../../state/modal.svelte';
   import { repo } from '../../state/repo.svelte';
@@ -8,6 +8,7 @@
   import type { DiffLine, FileDiff } from '../../types';
   import { shouldCloseDiffOnEsc } from '../../util/diffKeys';
   import { stepHunk } from '../../util/hunkNav';
+  import { isLiveSource } from '../../util/liveDiff';
   import { highlightLines } from './highlight';
   import SplitDiff from './SplitDiff.svelte';
   import UnifiedDiff from './UnifiedDiff.svelte';
@@ -23,29 +24,39 @@
   let loading = $state(false);
   let body = $state<HTMLDivElement>();
   let token = 0;
+  let shownKey = '';
 
-  // Load the diff whenever the file, source or view changes; stale responses are dropped by `token`.
+  // Load the diff whenever the file, source or view changes, and, for working-state sources,
+  // whenever the repo state refreshes. Stale responses are dropped by `token`.
   $effect(() => {
     const path = repo.path;
     const c = centre;
     if (!path || !c) return;
+    // Read stateVersion only for live sources, so commit diffs don't re-fetch on refresh.
+    if (isLiveSource(c.source)) void repo.stateVersion;
+    const key = JSON.stringify([path, c.path, c.origPath, c.source, c.view]);
     const t = ++token;
     const context = c.view === 'file' ? FILE_VIEW_CONTEXT : DIFF_VIEW_CONTEXT;
-    loading = true;
+    // A live refresh of the file already shown keeps scroll position and shows no "Loading…".
+    const refresh = untrack(() => key === shownKey && diff !== null);
+    if (!refresh) loading = true;
     error = null;
     api.fileDiff(path, c.path, c.origPath, c.source, context).then(
       async (d) => {
         if (t !== token) return;
+        if (refresh && diff && JSON.stringify(d) === JSON.stringify(diff)) return;
         diff = d;
         html = new Map();
         loading = false;
+        shownKey = key;
         await tick();
-        if (t === token && body) body.scrollTop = 0;
+        if (!refresh && t === token && body) body.scrollTop = 0;
         highlight(d, t);
       },
       (e) => {
         if (t !== token) return;
         diff = null;
+        shownKey = '';
         loading = false;
         error = (e as { stderr?: string; message?: string })?.stderr || (e as { message?: string })?.message || String(e);
       },

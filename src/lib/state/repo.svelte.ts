@@ -1,6 +1,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import * as api from '../api';
 import type { ChangeKind, GraphCommit, GraphSummary, Refs, RepoState } from '../types';
+import { leavesConflictView } from '../util/liveDiff';
 import { toasts } from './toasts.svelte';
 
 export const PAGE_SIZE = 200;
@@ -39,6 +40,8 @@ class RepoStore {
   centre = $state<Centre>({ kind: 'graph' });
   /** Bumped on every graph reload so views can reset scroll/caches. */
   graphVersion = $state(0);
+  /** Bumped (monotonically) whenever the working state is refreshed, so live diffs re-fetch. */
+  stateVersion = $state(0);
   /** Request for the graph to scroll to a row; `n` makes repeated requests for one index distinct. */
   reveal = $state<{ index: number; n: number } | null>(null);
 
@@ -86,15 +89,22 @@ class RepoStore {
         const [refs, st] = await Promise.all([api.listRefs(path), api.repoState(path)]);
         if (token !== this.#token) return;
         this.refs = refs;
-        this.state = st;
+        this.#setState(st);
         await this.reloadGraph();
       } else if (kinds.includes('Worktree')) {
         const st = await api.repoState(path);
-        if (token === this.#token) this.state = st;
+        if (token === this.#token) this.#setState(st);
       }
     } catch (e) {
       if (token === this.#token) report('Refresh failed', e);
     }
+  }
+
+  #setState(st: RepoState) {
+    // A finished merge/rebase/... leaves nothing to show in the conflict view.
+    if (leavesConflictView(this.state.operation, st.operation, this.centre)) this.centre = { kind: 'graph' };
+    this.state = st;
+    this.stateVersion++;
   }
 
   /** Reload the graph summary and drop cached pages; the selection (by oid) is kept. */

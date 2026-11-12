@@ -32,7 +32,10 @@
     if (amend) {
       // Just ticked: the draft is already saved; replace the fields with HEAD's message.
       try {
-        [summary, description] = await api.lastCommitMessage(path);
+        const msg = await api.lastCommitMessage(path);
+        // Unticked while the message was loading: keep the restored draft.
+        if (!amend) return;
+        [summary, description] = msg;
       } catch (e) {
         amend = false;
         const err = e as { message?: string };
