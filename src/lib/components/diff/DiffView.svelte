@@ -6,6 +6,7 @@
   import { session } from '../../state/session.svelte';
   import { ui } from '../../state/ui.svelte';
   import type { DiffLine, FileDiff } from '../../types';
+  import { shouldCloseDiffOnEsc } from '../../util/diffKeys';
   import { stepHunk } from '../../util/hunkNav';
   import { highlightLines } from './highlight';
   import SplitDiff from './SplitDiff.svelte';
@@ -87,8 +88,8 @@
     const el = e.target as HTMLElement | null;
     if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)) return;
     if (e.key === 'Escape') {
-      if (modalState.current || ui.settingsOpen) return;
-      repo.showGraph();
+      // Layers that consume Esc call preventDefault; the state checks cover listener-order races.
+      if (shouldCloseDiffOnEsc(e) && !modalState.current && !ui.settingsOpen) repo.showGraph();
     } else if (e.key === '[') stepTo(-1);
     else if (e.key === ']') stepTo(1);
   }

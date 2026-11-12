@@ -83,6 +83,7 @@
     const action = matchShortcut(e);
     if (!action) return;
     if (action === 'escape') {
+      if (ui.searchOpen || ui.settingsOpen) e.preventDefault();
       ui.searchOpen = false;
       ui.settingsOpen = false;
       return;
