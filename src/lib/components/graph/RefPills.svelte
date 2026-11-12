@@ -22,6 +22,9 @@
         </svg>
       {/if}
       <span class="name">{p.name}</span>
+      {#if p.local}
+        <svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 4h9v6.5h-9zM1.5 12.5h13" /></svg>
+      {/if}
       {#if p.remote}
         <svg class="ic cloud" viewBox="0 0 16 16" aria-hidden="true">
           <path d="M4.6 12.5h6.9a2.8 2.8 0 0 0 .3-5.6 4.2 4.2 0 0 0-8-.9 2.9 2.9 0 0 0 .8 6.5z" />
