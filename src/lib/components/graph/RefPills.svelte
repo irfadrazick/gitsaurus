@@ -76,6 +76,8 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* A line box taller than 1em, or overflow: hidden clips descenders (g, p, y). */
+    line-height: 16px;
   }
   .more {
     padding: 0 5px;
