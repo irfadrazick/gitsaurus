@@ -168,10 +168,6 @@
         {/if}
         <span>Pop</span>
       </button>
-      <button class="tb" onclick={() => api.openTerminal(path).catch((e) => console.warn(e))} title="Open Terminal here">
-        <svg viewBox="0 0 16 16"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5" /><path d="m4.5 6 2.5 2-2.5 2M8.5 10.5h3" /></svg>
-        <span>Terminal</span>
-      </button>
       <button class="tb" onclick={search} title="Search commits (⌘F)">
         <svg viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3.5 3.5" /></svg>
         <span>Search</span>

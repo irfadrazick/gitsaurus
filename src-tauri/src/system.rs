@@ -10,15 +10,6 @@ fn spawn_err(e: std::io::Error) -> GitError {
     }
 }
 
-pub fn open_terminal(repo: &Path) -> GitResult<()> {
-    Command::new("open")
-        .args(["-a", "Terminal"])
-        .arg(repo)
-        .spawn()
-        .map(|_| ())
-        .map_err(spawn_err)
-}
-
 pub fn reveal_in_finder(path: &Path) -> GitResult<()> {
     Command::new("open")
         .arg("-R")

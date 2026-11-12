@@ -81,7 +81,6 @@ export const setUpstream = (repo: string, local: string, remoteBranch: string) =
 // system
 export const watchRepo = (repo: string) => invoke<void>('watch_repo', { repo });
 export const unwatchRepo = (repo: string) => invoke<void>('unwatch_repo', { repo });
-export const openTerminal = (repo: string) => invoke<void>('open_terminal', { repo });
 export const openInEditor = (repo: string, path: string, editorCommand: string) =>
   invoke<void>('open_in_editor', { repo, path, editorCommand });
 export const revealInFinder = (repo: string, path: string) => invoke<void>('reveal_in_finder', { repo, path });

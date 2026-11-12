@@ -570,11 +570,6 @@ pub async fn unwatch_repo(state: State<'_, AppState>, repo: String) -> GitResult
 }
 
 #[tauri::command]
-pub async fn open_terminal(repo: String) -> GitResult<()> {
-    system::open_terminal(Path::new(&repo))
-}
-
-#[tauri::command]
 pub async fn open_in_editor(repo: String, path: String, editor_command: String) -> GitResult<()> {
     system::open_in_editor(Path::new(&repo), &path, &editor_command)
 }

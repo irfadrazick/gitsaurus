@@ -72,7 +72,6 @@ pub fn run() {
             commands::set_upstream,
             commands::watch_repo,
             commands::unwatch_repo,
-            commands::open_terminal,
             commands::open_in_editor,
             commands::reveal_in_finder,
         ])
