@@ -328,7 +328,8 @@
             match={matchSet.has(i)}
             current={i === currentMatch}
             marker={c ? markerFor(i, c) : null}
-            capTop={i === 0 && !hasWip}
+            headIndex={repo.summary.headIndex}
+            hasWip={hasWip}
           />
         {/each}
       </div>

@@ -7,6 +7,8 @@ import {
   laneX,
   pagesFor,
   revealScrollTop,
+  seedSegment,
+  seedStyle,
   segmentPath,
   stepMatch,
   tint,
@@ -112,5 +114,34 @@ describe('stepMatch', () => {
     expect(stepMatch(3, 0, -1)).toBe(2);
     expect(stepMatch(3, -1, 1)).toBe(0);
     expect(stepMatch(0, -1, 1)).toBe(-1);
+  });
+});
+
+describe('seed segments (R8: the HEAD lane seeded above row 0 is the WIP -> HEAD connector)', () => {
+  it('head at 0: into lane 0 on row 0 is a seed', () => {
+    expect(seedSegment(0, 0, 'into', 0)).toBe(true);
+    expect(seedSegment(1, 0, 'into', 0)).toBe(false);
+    expect(seedSegment(1, 0, 'pass', 0)).toBe(false);
+  });
+  it('head at 3: pass lane 0 above it and into lane 0 at it are seeds, nothing below', () => {
+    for (const i of [0, 1, 2]) expect(seedSegment(i, 3, 'pass', 0)).toBe(true);
+    expect(seedSegment(3, 3, 'into', 0)).toBe(true);
+    expect(seedSegment(3, 3, 'pass', 0)).toBe(false);
+    expect(seedSegment(4, 3, 'pass', 0)).toBe(false);
+    expect(seedSegment(2, 3, 'into', 0)).toBe(false);
+  });
+  it('non-zero lanes are never seeds', () => {
+    expect(seedSegment(0, 3, 'pass', 1)).toBe(false);
+    expect(seedSegment(3, 3, 'into', 2)).toBe(false);
+  });
+  it('headIndex null: never', () => {
+    expect(seedSegment(0, null, 'into', 0)).toBe(false);
+    expect(seedSegment(0, null, 'pass', 0)).toBe(false);
+  });
+  it('seeds are dashed under a WIP row and hidden without one; other segments stay solid', () => {
+    expect(seedStyle(true, true)).toBe('dashed');
+    expect(seedStyle(true, false)).toBe('hidden');
+    expect(seedStyle(false, true)).toBe('solid');
+    expect(seedStyle(false, false)).toBe('solid');
   });
 });

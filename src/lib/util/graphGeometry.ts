@@ -112,3 +112,19 @@ export function stepMatch(count: number, current: number, dir: 1 | -1): number {
   if (current < 0) return dir > 0 ? 0 : count - 1;
   return (current + dir + count) % count;
 }
+
+/**
+ * Ruling R8: the backend seeds lane 0 with HEAD before row 0, so every row above `headIndex` carries
+ * lane 0 in `pass` and the HEAD row carries lane 0 in `into`. These "seed segments" are the WIP -> HEAD
+ * connector. True when the given segment of row `index` is one of them.
+ */
+export function seedSegment(index: number, headIndex: number | null, kind: 'into' | 'pass', lane: number): boolean {
+  if (headIndex === null || lane !== 0) return false;
+  return kind === 'pass' ? index < headIndex : index === headIndex;
+}
+
+export type SegmentStyle = 'solid' | 'dashed' | 'hidden';
+
+/** Seed segments are dashed under a WIP row and hidden without one (they would dangle from the list top). */
+export const seedStyle = (isSeed: boolean, wip: boolean): SegmentStyle =>
+  !isSeed ? 'solid' : wip ? 'dashed' : 'hidden';

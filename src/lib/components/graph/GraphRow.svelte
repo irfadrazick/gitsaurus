@@ -16,7 +16,8 @@
     match = false,
     current = false,
     marker = null,
-    capTop = false,
+    headIndex = null,
+    hasWip = false,
   }: {
     index: number;
     /** Undefined while its page loads (skeleton row). */
@@ -30,7 +31,9 @@
     current?: boolean;
     /** Relative-time chip text, when this row starts a new age bucket. */
     marker?: string | null;
-    capTop?: boolean;
+    /** HEAD's graph index and whether a WIP row is shown: GraphCell styles the seed segments (R8). */
+    headIndex?: number | null;
+    hasWip?: boolean;
   } = $props();
 
   const isWip = $derived(wipCount !== undefined);
@@ -68,7 +71,7 @@
   >
     <div class="refs"><RefPills pills={pills} color={laneColor(color)} /></div>
     <div class="graph">
-      <GraphCell commit={commit} selected={selected} hasRefs={pills.length > 0} capTop={capTop} />
+      <GraphCell commit={commit} selected={selected} hasRefs={pills.length > 0} index={index} headIndex={headIndex} hasWip={hasWip} />
     </div>
     <div class="msg">
       <span class="text"><span class="summary">{commit.summary}</span>{#if commit.bodyPreview}<span class="body">{commit.bodyPreview}</span>{/if}</span>
