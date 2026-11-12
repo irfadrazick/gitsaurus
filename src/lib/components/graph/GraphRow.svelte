@@ -1,8 +1,7 @@
 <script lang="ts">
   import type { GraphCommit } from '../../types';
-  import { laneColor, tint } from '../../util/graphGeometry';
+  import { laneColor } from '../../util/graphGeometry';
   import { rowPills } from '../../util/refs';
-  import Avatar from './Avatar.svelte';
   import GraphCell from './GraphCell.svelte';
   import RefPills from './RefPills.svelte';
 
@@ -50,12 +49,11 @@
     role="option"
     aria-selected={selected}
     data-wip=""
-    style:--tint={tint(0, selected ? 0.22 : 0.12)}
   >
     <div class="refs"></div>
     <div class="graph"><GraphCell wip wipLinked={wipLinked} selected={selected} /></div>
     <div class="msg">
-      <span class="text"><span class="wiplabel">// WIP</span><span class="body">{wipCount} changed {wipCount === 1 ? 'file' : 'files'}</span></span>
+      <span class="text"><span class="wiplabel">WIP</span><span class="body">{wipCount} changed {wipCount === 1 ? 'file' : 'files'}</span></span>
     </div>
   </div>
 {:else if commit}
@@ -67,7 +65,6 @@
     role="option"
     aria-selected={selected}
     data-index={index}
-    style:--tint={tint(color, selected ? 0.22 : 0.12)}
   >
     <div class="refs"><RefPills pills={pills} color={laneColor(color)} /></div>
     <div class="graph">
@@ -76,7 +73,6 @@
     <div class="msg">
       <span class="text"><span class="summary">{commit.summary}</span>{#if commit.bodyPreview}<span class="body">{commit.bodyPreview}</span>{/if}</span>
       {#if marker}<span class="marker">{marker}</span>{/if}
-      <Avatar email={commit.authorEmail} name={commit.authorName} color={laneColor(color)} />
     </div>
   </div>
 {:else}
@@ -88,11 +84,18 @@
 {/if}
 
 <style>
+  /* Rows stay neutral: lane colour lives in the graph and the pills, so selection is the one strong fill. */
   .row {
     display: grid;
     grid-template-columns: var(--refs-w) var(--graph-w) minmax(0, 1fr);
     height: 36px;
     cursor: default;
+  }
+  .row:hover {
+    background: var(--hover);
+  }
+  .row.selected {
+    background: var(--sel);
   }
   .refs {
     min-width: 0;
@@ -100,22 +103,13 @@
   }
   .graph {
     overflow: hidden;
-    background: var(--tint);
   }
   .msg {
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
-    padding: 0 10px 0 6px;
-    background: var(--tint);
-  }
-  .row:hover .graph,
-  .row:hover .msg {
-    background-image: linear-gradient(rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.035));
-  }
-  .row.selected .msg {
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+    padding: 0 12px 0 6px;
   }
   .text {
     flex: 1;
@@ -128,45 +122,49 @@
     color: var(--text);
   }
   .row.selected .summary {
-    color: #f0f3f6;
+    color: var(--sel-text);
   }
   .body {
     margin-left: 8px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
+  }
+  .row.selected .body,
+  .row.selected .marker {
+    color: var(--sel-muted);
   }
   .wiplabel {
     color: var(--muted);
-    font-family: var(--mono);
-    font-size: 12px;
-    font-style: italic;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
   .wip .body {
     color: var(--text);
-    font-size: 13px;
+    font-size: var(--fs-md);
   }
   .marker {
     flex: none;
     padding: 0 7px;
     border-radius: 9px;
-    background: rgba(255, 255, 255, 0.07);
-    color: var(--muted);
-    font-size: 11px;
+    background: var(--chip);
+    color: var(--chip-text);
+    font-size: var(--fs-xs);
     line-height: 18px;
     white-space: nowrap;
   }
   /* Search hits: an amber edge on the message cell; the current hit is stronger. */
   .row.match .msg {
-    box-shadow: inset 3px 0 0 rgba(227, 179, 65, 0.55);
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--match) 55%, transparent);
   }
   .row.match .summary {
-    color: #f2d27a;
+    color: color-mix(in srgb, var(--match) 70%, #fff);
   }
   .row.current .msg {
-    box-shadow: inset 3px 0 0 #e3b341, inset 0 0 0 1px rgba(227, 179, 65, 0.45);
+    box-shadow: inset 3px 0 0 var(--match), inset 0 0 0 1px color-mix(in srgb, var(--match) 45%, transparent);
   }
-  .skeleton .graph,
-  .skeleton .msg {
+  .skeleton:hover {
     background: transparent;
   }
   .dot {
@@ -175,12 +173,12 @@
     height: 10px;
     margin: 13px 0 0 9px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.06);
+    background: rgb(255 255 255 / 0.06);
   }
   .bar {
     height: 10px;
-    border-radius: 5px;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.05));
+    border-radius: var(--radius-sm);
+    background: linear-gradient(90deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.05));
     background-size: 200% 100%;
     animation: shimmer 1.4s linear infinite;
   }

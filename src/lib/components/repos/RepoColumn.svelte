@@ -5,6 +5,9 @@
   import { openRepoDialog } from '../../state/repos';
   import { session } from '../../state/session.svelte';
   import { repoInitials, repoName } from '../../util/repoInitials';
+  import Icon from '../Icon.svelte';
+
+  const toggleCollapsed = () => (session.reposCollapsed = !session.reposCollapsed);
 
   let dragFrom = $state<number | null>(null);
   let dragOver = $state<number | null>(null);
@@ -49,6 +52,7 @@
     <header>
       <span class="title">Repositories</span>
       <span class="count">{session.openRepos.length}</span>
+      <button class="iconbtn" onclick={toggleCollapsed} title="Collapse (⌘B)" aria-label="Collapse repositories"><Icon name="sidebar" /></button>
     </header>
   {/if}
   <div class="list" role="listbox" aria-label="Open repositories">
@@ -93,8 +97,11 @@
       </div>
     {/each}
   </div>
+  {#if session.reposCollapsed}
+    <button class="iconbtn expand" onclick={toggleCollapsed} title="Expand (⌘B)" aria-label="Expand repositories"><Icon name="sidebar" /></button>
+  {/if}
   <button class="open" onclick={openRepoDialog} title="Open repo… (⌘O)" aria-label="Open repo">
-    {session.reposCollapsed ? '+' : '+ Open repo…'}
+    <Icon name="plus" size={12} stroke={1.8} />{#if !session.reposCollapsed}<span>Open repo…</span>{/if}
   </button>
 </div>
 
@@ -109,15 +116,37 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 12px 6px;
-    font-size: 11px;
+    gap: 6px;
+    padding: 8px 6px 6px 12px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--muted);
   }
+  .title {
+    flex: 1;
+  }
   .count {
     font-weight: 500;
+  }
+  .iconbtn {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--muted);
+  }
+  .iconbtn:hover:not(:disabled) {
+    background: var(--hover);
+    color: var(--text);
+  }
+  .iconbtn.expand {
+    margin: 0 auto 2px;
   }
   .list {
     flex: 1;
@@ -132,26 +161,28 @@
     gap: 8px;
     height: 28px;
     padding: 0 10px;
-    border-radius: 6px;
+    border-radius: var(--radius);
     cursor: default;
     color: var(--text);
   }
   .row:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--hover);
   }
   .row.selected {
-    background: var(--accent);
-    color: #fff;
+    background: var(--sel);
+    color: var(--sel-text);
+    font-weight: 600;
   }
   .row.missing {
     color: var(--muted);
     font-style: italic;
   }
   .row.dragover {
-    box-shadow: 0 -2px 0 0 var(--accent);
+    box-shadow: 0 -2px 0 0 var(--focus);
   }
   .row:focus-visible {
-    outline: 1px solid var(--accent);
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
   }
   .name {
     flex: 1;
@@ -161,9 +192,9 @@
     white-space: nowrap;
   }
   .tag {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     padding: 0 6px;
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     border: 1px solid var(--line);
     color: var(--muted);
     font-style: normal;
@@ -194,23 +225,26 @@
     place-items: center;
     width: 30px;
     height: 26px;
-    border-radius: 6px;
-    font-size: 11px;
+    border-radius: var(--radius);
+    font-size: var(--fs-xs);
     font-weight: 600;
     letter-spacing: 0.02em;
   }
   .row:not(.selected) .badge {
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--chip);
   }
   .open {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
     margin: 6px;
     height: 28px;
     padding: 0 8px;
     background: transparent;
-    border-style: dashed;
     color: var(--muted);
   }
-  .open:hover {
+  .open:hover:not(:disabled) {
     color: var(--text);
   }
 </style>

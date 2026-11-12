@@ -63,14 +63,15 @@
   .col.collapsed {
     overflow: hidden;
   }
+  /* A 1 px divider with a 5 px grab area. */
   .handle {
     width: 5px;
     cursor: col-resize;
-    background: var(--line);
+    background: linear-gradient(to right, transparent 2px, var(--line) 2px, var(--line) 3px, transparent 3px);
     touch-action: none;
   }
   .handle:hover {
-    background: var(--accent);
+    background: linear-gradient(to right, transparent 1px, var(--focus) 1px, var(--focus) 4px, transparent 4px);
   }
   .handle.inert {
     cursor: default;

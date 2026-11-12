@@ -127,11 +127,28 @@ pub fn layout(commits: &[RawCommit], head: Option<&str>) -> (Vec<RowLayout>, u16
 }
 
 /// Non-empty body lines joined by single spaces, cut at 200 chars.
+/// Trailers that add nothing to a one-line preview (co-authors show as avatars in details).
+const TRAILERS: &[&str] = &[
+    "co-authored-by:",
+    "signed-off-by:",
+    "reviewed-by:",
+    "acked-by:",
+    "tested-by:",
+    "reported-by:",
+    "helped-by:",
+    "change-id:",
+];
+
+fn is_trailer(line: &str) -> bool {
+    let l = line.to_ascii_lowercase();
+    TRAILERS.iter().any(|t| l.starts_with(t))
+}
+
 pub fn body_preview(body: &str) -> String {
     let joined = body
         .lines()
         .map(str::trim)
-        .filter(|l| !l.is_empty())
+        .filter(|l| !l.is_empty() && !is_trailer(l))
         .collect::<Vec<_>>()
         .join(" ");
     joined.chars().take(200).collect()
@@ -294,6 +311,17 @@ mod tests {
     fn body_preview_joins_and_truncates() {
         assert_eq!(body_preview("\n\nA\n\nB  \n"), "A B");
         assert_eq!(body_preview(&"x".repeat(500)).chars().count(), 200);
+    }
+
+    #[test]
+    fn body_preview_drops_trailers() {
+        assert_eq!(
+            body_preview(
+                "Explain why.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nSigned-off-by: A <a@b.c>"
+            ),
+            "Explain why."
+        );
+        assert_eq!(body_preview("Co-authored-by: X <x@y.z>"), "");
     }
 
     #[test]

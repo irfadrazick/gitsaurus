@@ -133,9 +133,9 @@
     height: 34px;
     padding: 0 4px 0 10px;
     border: 1px solid var(--line);
-    border-radius: 8px;
+    border-radius: var(--radius-lg);
     background: var(--panel);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    box-shadow: var(--shadow-pop);
   }
   .glass {
     flex: none;
@@ -154,7 +154,7 @@
     padding: 0 4px;
     border: 0;
     background: transparent;
-    font-size: 13px;
+    font-size: var(--fs-md);
   }
   input:focus {
     outline: none;
@@ -164,7 +164,7 @@
     min-width: 44px;
     padding: 0 6px;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
@@ -180,12 +180,12 @@
     height: 24px;
     padding: 0;
     border: 0;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--muted);
   }
   .icon:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.07);
+    background: var(--hover);
     color: var(--text);
   }
   .icon:disabled {

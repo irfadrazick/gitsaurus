@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from '../Icon.svelte';
   import { performMenuAction, type ActionContext } from '../../state/actions';
   import { openMenu } from '../../state/contextMenu.svelte';
   import { runOp } from '../../state/ops';
@@ -62,7 +63,7 @@
 
 <div class="col">
   <div class="filter">
-    <input type="text" placeholder="Filter branches, tags…" bind:value={filter} aria-label="Filter refs" />
+    <input type="search" placeholder="Filter branches, tags…" bind:value={filter} aria-label="Filter refs" spellcheck="false" autocomplete="off" autocapitalize="off" />
   </div>
   <div class="scroll">
     {#if !repo.path}
@@ -70,7 +71,7 @@
     {:else}
       {#snippet header(key: string, title: string, count: number)}
         <button class="sec" onclick={() => toggle(key)} aria-expanded={open(key)}>
-          <span class="chev" class:closed={!open(key)}>▾</span>
+          <span class="chev" class:closed={!open(key)}><Icon name="chevronDown" size={12} /></span>
           <span class="stitle">{title}</span>
           <span class="count">{count}</span>
         </button>
@@ -92,7 +93,7 @@
               ondblclick={() => checkout(b)}
               oncontextmenu={(e) => show(e, branchCtx(b), branchMenu)}
             >
-              <span class="check">{b.isHead ? '✓' : ''}</span>
+              <span class="check">{#if b.isHead}<Icon name="check" size={12} stroke={2} />{/if}</span>
               <span class="name">{b.name}</span>
               {#if b.gone}<span class="badge gone">gone</span>{/if}
               {#if b.ahead > 0}<span class="badge">↑{b.ahead}</span>{/if}
@@ -203,23 +204,24 @@
     margin-top: 6px;
     padding: 0 6px;
     border: 0;
-    border-radius: 5px;
+    border-radius: var(--radius-sm);
     background: transparent;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
     text-align: left;
   }
-  .sec:hover {
+  .sec:hover:not(:disabled) {
     color: var(--text);
     border: 0;
+    background: transparent;
   }
   .chev {
-    display: inline-block;
-    width: 10px;
-    transition: transform 0.12s;
+    display: inline-flex;
+    width: 12px;
+    transition: transform 0.12s ease-out;
   }
   .chev.closed {
     transform: rotate(-90deg);
@@ -234,7 +236,7 @@
   .remote-name {
     height: 24px;
     padding: 4px 10px 0;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--muted);
   }
   .row {
@@ -243,21 +245,22 @@
     gap: 6px;
     height: 28px;
     padding: 0 8px;
-    border-radius: 6px;
+    border-radius: var(--radius);
     cursor: default;
   }
   .row.indent {
     padding-left: 18px;
   }
   .row:hover {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--hover);
   }
   .row.selected {
-    background: var(--accent);
-    color: #fff;
+    background: var(--sel);
+    color: var(--sel-text);
   }
   .row:focus-visible {
-    outline: 1px solid var(--accent);
+    outline: 2px solid var(--focus);
+    outline-offset: -2px;
   }
   .row.head .name {
     font-weight: 600;
@@ -266,10 +269,6 @@
     flex: none;
     width: 12px;
     color: var(--add);
-    font-size: 12px;
-  }
-  .row.selected .check {
-    color: #fff;
   }
   .name {
     flex: 1;
@@ -281,23 +280,23 @@
   .badge {
     flex: none;
     padding: 0 6px;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--muted);
-    font-size: 11px;
+    border-radius: var(--radius-lg);
+    background: var(--chip);
+    color: var(--chip-text);
+    font-size: var(--fs-xs);
     line-height: 16px;
     font-variant-numeric: tabular-nums;
   }
   .badge.gone {
-    color: var(--del);
+    color: var(--danger-text);
   }
   .row.selected .badge {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
+    background: rgb(255 255 255 / 0.12);
+    color: var(--sel-text);
   }
   .empty {
     padding: 12px;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
 </style>

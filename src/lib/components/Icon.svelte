@@ -1,0 +1,39 @@
+<script lang="ts" module>
+  /** Small UI icons, drawn on a 16-unit grid in the toolbar's stroke style. */
+  const PATHS = {
+    chevronDown: 'M4.5 6.5 8 10l3.5-3.5',
+    chevronRight: 'M6.5 4.5 10 8l-3.5 3.5',
+    check: 'M3.5 8.5 6.5 11.5 12.5 5',
+    close: 'M4.5 4.5l7 7M11.5 4.5l-7 7',
+    plus: 'M8 3.5v9M3.5 8h9',
+    minus: 'M3.5 8h9',
+    arrowUp: 'M8 12.5v-9M4.5 7 8 3.5 11.5 7',
+    arrowDown: 'M8 3.5v9M4.5 9 8 12.5 11.5 9',
+    file: 'M4.5 2.5h4.5l3 3v8h-7.5zM9 2.5v3h3',
+    sidebar: 'M2.5 3.5h11v9h-11zM6.5 3.5v9',
+    pencil: 'M10.5 3 13 5.5 6 12.5H3.5V10z',
+    info: 'M8 7.5v4M8 5h.01M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0',
+    alert: 'M8 5v3.5M8 11h.01M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0',
+    checkCircle: 'M5.5 8.2 7.3 10l3.2-3.6M14 8A6 6 0 1 1 2 8a6 6 0 0 1 12 0',
+  } as const;
+  export type IconName = keyof typeof PATHS;
+</script>
+
+<script lang="ts">
+  let { name, size = 14, stroke = 1.5 }: { name: IconName; size?: number; stroke?: number } = $props();
+</script>
+
+<svg class="icon" width={size} height={size} viewBox="0 0 16 16" aria-hidden="true" stroke-width={stroke}>
+  <path d={PATHS[name]} />
+</svg>
+
+<style>
+  .icon {
+    display: block;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>

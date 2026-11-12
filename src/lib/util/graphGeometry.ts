@@ -18,12 +18,6 @@ export const palette = [
 /** Colour for a backend colour id (ids are unbounded; the palette wraps). */
 export const laneColor = (color: number): string => palette[((color % palette.length) + palette.length) % palette.length];
 
-/** `laneColor(color)` with an alpha byte for `opacity` (0..1), e.g. the 12% row tint. */
-export function tint(color: number, opacity: number): string {
-  const a = Math.round(Math.min(1, Math.max(0, opacity)) * 255);
-  return laneColor(color) + a.toString(16).padStart(2, '0');
-}
-
 /** Centre x of a lane inside a graph cell. */
 export const laneX = (lane: number): number => LANE_X0 + lane * LANE_W;
 

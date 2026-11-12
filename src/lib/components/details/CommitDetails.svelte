@@ -1,9 +1,11 @@
 <script lang="ts">
   import * as api from '../../api';
+  import { copyText } from '../../state/actions';
   import { repo } from '../../state/repo.svelte';
   import type { ChangedFile, CommitDetails, Person } from '../../types';
   import { changeSummary } from '../../util/changes';
   import { formatDate } from '../../util/date';
+  import { displayBody } from '../../util/message';
   import { palette } from '../../util/graphGeometry';
   import Avatar from '../graph/Avatar.svelte';
   import FileList from './FileList.svelte';
@@ -43,6 +45,7 @@
         details.author.email !== details.committer.email ||
         details.author.time !== details.committer.time),
   );
+  const body = $derived(details ? displayBody(details.body) : '');
   const selectedPath = $derived(repo.centre.kind === 'diff' ? repo.centre.path : null);
   const outsideGraph = $derived(repo.selection?.kind === 'commit' && repo.selection.oid === oid && !!repo.selection.outsideGraph);
 
@@ -70,14 +73,17 @@
     <div class="head">
       <div class="shas small">
         {#if outsideGraph}<span class="note">Stash (not in graph)</span>{/if}
-        <span class="muted">commit:</span> <span class="mono">{short(details.oid)}</span>
-        {#each details.parents as p (p)}
-          <span class="muted">parent:</span>
-          <button class="link mono" type="button" title={p} onclick={() => repo.revealCommit(p)}>{short(p)}</button>
-        {/each}
+        <span class="muted">Commit</span>
+        <button class="sha mono" type="button" title="Copy {details.oid}" onclick={() => copyText(details!.oid)}>{short(details.oid)}</button>
+        {#if details.parents.length}
+          <span class="muted">{details.parents.length > 1 ? 'Parents' : 'Parent'}</span>
+          {#each details.parents as p (p)}
+            <button class="link mono" type="button" title="Show {p}" onclick={() => repo.revealCommit(p)}>{short(p)}</button>
+          {/each}
+        {/if}
       </div>
       <h2 class="summary">{details.summary}</h2>
-      {#if details.body.trim()}<div class="body">{details.body}</div>{/if}
+      {#if body}<div class="body">{body}</div>{/if}
       <div class="people">
         {@render person('authored', details.author)}
         {#if committerDiffers}{@render person('committed', details.committer)}{/if}
@@ -103,7 +109,7 @@
     margin-right: 6px;
     padding: 0 6px;
     border: 1px solid var(--line);
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     color: var(--muted);
   }
   .details {
@@ -117,10 +123,21 @@
   }
   .msg {
     padding: 10px 12px;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .err {
-    color: var(--del);
+    color: var(--danger-text);
+  }
+  .sha {
+    padding: 0 4px;
+    margin: 0 -4px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: transparent;
+    color: var(--text);
+  }
+  .sha:hover:not(:disabled) {
+    background: var(--hover);
   }
   .head {
     display: flex;
@@ -151,7 +168,7 @@
   }
   .summary {
     margin: 0;
-    font-size: 16px;
+    font-size: var(--fs-lg);
     font-weight: 600;
     line-height: 1.3;
     overflow-wrap: anywhere;
@@ -161,8 +178,9 @@
     overflow-y: auto;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    font-size: 12px;
-    color: var(--muted);
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--text) 85%, var(--muted));
   }
   .people {
     display: flex;
@@ -185,7 +203,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .co {
     flex-wrap: wrap;

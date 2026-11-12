@@ -140,7 +140,11 @@
           </div>
         </div>
       {:else}
-        <div class="ph">Open a repository with ⌘O</div>
+        <div class="ph">
+          <p class="ph-title">No repository open</p>
+          <p class="ph-hint">Open a local git repository to see its history.</p>
+          <button class="primary" type="button" onclick={openRepoDialog}>Open repository… <span class="kbd">⌘O</span></button>
+        </div>
       {/if}
     {/snippet}
     {#snippet details()}
@@ -151,7 +155,10 @@
       {:else if repo.selection?.kind === 'commit'}
         <CommitDetails oid={repo.selection.oid} />
       {:else}
-        <div class="ph">Select a commit to see its details</div>
+        <div class="ph">
+          <p class="ph-title">No commit selected</p>
+          <p class="ph-hint">Click a commit to see its message and changed files. Use ↑ and ↓ to move through history.</p>
+        </div>
       {/if}
     {/snippet}
   </Columns>
@@ -184,8 +191,32 @@
     pointer-events: none;
   }
   .ph {
-    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    max-width: 280px;
+    margin: 0 auto;
+    padding: 30vh 16px 0;
+    text-align: center;
+  }
+  .ph p {
+    margin: 0;
+  }
+  .ph-title {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .ph-hint {
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
+    line-height: 1.5;
+  }
+  .ph button {
+    margin-top: 8px;
+  }
+  .kbd {
+    margin-left: 6px;
+    opacity: 0.75;
   }
 </style>

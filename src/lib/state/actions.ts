@@ -4,6 +4,7 @@ import type { MenuContext } from '../util/menus';
 import type { PullMode } from '../types';
 import { pullPlan } from '../util/pull';
 import { forcePushWarning } from '../util/push';
+import { explainRefName } from '../util/refName';
 import { defaultRemote } from '../util/watchDiff';
 import { actionFor, defaultUpstream, isNotMerged, remoteOfUpstream, type MenuKind } from '../util/actionTable';
 import { choose, confirm, prompt } from './modal.svelte';
@@ -25,17 +26,24 @@ export interface ActionContext extends MenuContext {
 
 const message = (e: unknown) => (e as { message?: string } | null)?.message ?? String(e);
 
-/** Map a rejected validate call to the Modal's `validate` contract (error text, or null when valid). */
-const validator = (fn: (repo: string, name: string) => Promise<void>, path: string) => async (v: string) => {
+/**
+ * A Modal `validate` for a branch or tag name: the specific rule a bad name breaks, then git's
+ * own check as the authority (error text, or null when valid).
+ */
+export const validator = (fn: (repo: string, name: string) => Promise<void>, path: string) => async (v: string) => {
+  const problem = explainRefName(v);
+  if (problem) return problem;
   try {
     await fn(path, v);
     return null;
   } catch (e) {
-    return message(e);
+    const m = message(e);
+    return /^Invalid (branch|tag) name/.test(m) ? "Git doesn't accept this name." : m;
   }
 };
 
-async function copy(text: string) {
+/** Copy text to the clipboard and confirm with a toast. */
+export async function copyText(text: string) {
   try {
     await writeText(text);
     toasts.push({ kind: 'ok', title: 'Copied', detail: text });
@@ -301,10 +309,10 @@ export async function performMenuAction(id: string, ctx: ActionContext): Promise
       return;
     }
     case 'copyBranchName':
-    case 'copyTagName': return copy(name);
+    case 'copyTagName': return copyText(name);
     case 'copySha': {
       const o = needOid();
-      if (o) await copy(o);
+      if (o) await copyText(o);
       return;
     }
     case 'stashApply':

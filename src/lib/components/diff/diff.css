@@ -15,7 +15,7 @@
   width: 48px;
   padding-right: 8px;
   text-align: right;
-  font-size: 11px;
+  font-size: var(--fs-xs);
   color: var(--muted);
   user-select: none;
   -webkit-user-select: none;
@@ -45,6 +45,14 @@
 .diff .half.del {
   background: color-mix(in srgb, var(--del) 15%, transparent);
 }
+.diff .line.cmark,
+.diff .half.cmark {
+  background: color-mix(in srgb, var(--lane-4) 16%, transparent);
+}
+.diff .cmark .code {
+  color: var(--lane-4);
+  font-weight: 600;
+}
 .diff .line.add .mark {
   color: var(--add);
 }
@@ -59,10 +67,18 @@
   color: var(--muted);
   background: color-mix(in srgb, var(--text) 7%, var(--bg));
 }
+.diff.split {
+  width: 100%;
+}
 .diff .half {
   display: flex;
-  flex: 1 0 calc(var(--cols) + 64px);
+  flex: 1 1 0;
   min-width: 0;
+}
+.diff.split .code {
+  min-width: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 .diff .half.empty {
   background: color-mix(in srgb, var(--text) 4%, transparent);

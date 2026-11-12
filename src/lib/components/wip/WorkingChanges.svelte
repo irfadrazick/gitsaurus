@@ -10,6 +10,7 @@
   import FileList from '../details/FileList.svelte';
   import CommitBox from './CommitBox.svelte';
   import ConflictFile from './ConflictFile.svelte';
+  import Icon from '../Icon.svelte';
 
   const split = $derived(splitStatus(repo.state.files));
   // Conflicts outside an operation (e.g. a stash apply/pop); conflicted files never get a Discard action.
@@ -67,7 +68,7 @@
       {#if unstaged.length}
         <FileList bare files={unstaged} onOpen={openUnstaged} selected={selectedPath} {onContext}>
           {#snippet actions(f)}
-            <button class="act" type="button" title="Stage" aria-label="Stage {f.path}" onclick={() => stage(f)}>+</button>
+            <button class="act" type="button" title="Stage" aria-label="Stage {f.path}" onclick={() => stage(f)}><Icon name="plus" size={12} stroke={1.8} /></button>
           {/snippet}
         </FileList>
       {:else}
@@ -82,7 +83,7 @@
       {#if staged.length}
         <FileList bare files={staged} onOpen={openStaged} selected={selectedPath}>
           {#snippet actions(f)}
-            <button class="act" type="button" title="Unstage" aria-label="Unstage {f.path}" onclick={() => unstage(f)}>−</button>
+            <button class="act" type="button" title="Unstage" aria-label="Unstage {f.path}" onclick={() => unstage(f)}><Icon name="minus" size={12} stroke={1.8} /></button>
           {/snippet}
         </FileList>
       {:else}
@@ -118,18 +119,22 @@
   }
   h3 {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 600;
   }
   header button {
     padding: 1px 8px;
-    font-size: var(--font-min);
+    font-size: var(--fs-xs);
+  }
+  section + section {
+    margin-top: 6px;
   }
   .act {
+    display: grid;
+    place-items: center;
     width: 22px;
     height: 20px;
     padding: 0;
-    line-height: 1;
   }
   .empty {
     margin: 0;

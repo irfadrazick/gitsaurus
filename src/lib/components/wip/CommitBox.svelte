@@ -121,7 +121,7 @@
     top: 50%;
     right: 8px;
     transform: translateY(-50%);
-    font-size: var(--font-min);
+    font-size: var(--fs-xs);
     color: var(--muted);
   }
   .count.over {
@@ -132,7 +132,7 @@
     min-height: 56px;
     max-height: 240px;
     font: inherit;
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .foot {
     display: flex;
@@ -144,15 +144,13 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    font-size: 12px;
+    font-size: var(--fs-sm);
     color: var(--muted);
   }
-  .primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
+  .amend:hover {
+    color: var(--text);
   }
-  .primary:disabled {
-    opacity: 0.45;
+  .foot .primary {
+    min-width: 84px;
   }
 </style>

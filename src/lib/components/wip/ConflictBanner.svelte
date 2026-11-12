@@ -28,13 +28,13 @@
   <div class="banner" class:clean={conflicted === 0} role="status">
     <span class="text">{bannerText(op, conflicted)}</span>
     <span class="btns">
-      <button type="button" disabled={conflicted > 0 || working} title={conflicted > 0 ? 'Resolve all conflicts first' : ''} onclick={proceed}>
+      <button type="button" class:primary={conflicted === 0} disabled={conflicted > 0 || working} title={conflicted > 0 ? 'Resolve all conflicts first' : ''} onclick={proceed}>
         Continue
       </button>
       {#if op.kind === 'rebase'}
         <button type="button" disabled={working} onclick={skip}>Skip</button>
       {/if}
-      <button class="danger" type="button" disabled={working} onclick={abort}>Abort</button>
+      <button class="danger-quiet" type="button" disabled={working} onclick={abort}>Abort</button>
     </span>
   </div>
 {/if}
@@ -49,16 +49,21 @@
     padding: 6px 12px;
     border-bottom: 1px solid var(--line);
     background: color-mix(in srgb, var(--del) 22%, var(--panel));
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .banner.clean {
     background: color-mix(in srgb, var(--add) 20%, var(--panel));
   }
   .btns {
     display: inline-flex;
+    flex: none;
     gap: 6px;
   }
-  .danger {
-    color: var(--del);
+  .text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--sel-text);
   }
 </style>

@@ -6,6 +6,7 @@
   import { conflictSides, toWipFile } from '../../util/wip';
   import FileList from '../details/FileList.svelte';
   import ConflictFile from './ConflictFile.svelte';
+  import Icon from '../Icon.svelte';
 
   const split = $derived(splitStatus(repo.state.files));
   const sides = $derived(conflictSides(repo.state.operation));
@@ -33,7 +34,7 @@
     <header><h3>Resolved and staged ({resolved.length})</h3></header>
     <FileList bare files={resolved} onOpen={openStaged} selected={selectedPath}>
       {#snippet actions(f)}
-        <button class="act" type="button" title="Unstage" aria-label="Unstage {f.path}" onclick={() => unstage(f.path, f.origPath)}>−</button>
+        <button class="act" type="button" title="Unstage" aria-label="Unstage {f.path}" onclick={() => unstage(f.path, f.origPath)}><Icon name="minus" size={12} stroke={1.8} /></button>
       {/snippet}
     </FileList>
   {/if}
@@ -54,7 +55,7 @@
   }
   h3 {
     margin: 0;
-    font-size: 12px;
+    font-size: var(--fs-sm);
     font-weight: 600;
   }
   .empty {
@@ -62,9 +63,10 @@
     padding: 8px 12px;
   }
   .act {
+    display: grid;
+    place-items: center;
     width: 22px;
     height: 20px;
     padding: 0;
-    line-height: 1;
   }
 </style>

@@ -250,7 +250,11 @@
     openMenu(e.clientX, e.clientY, items(ctx), (id) => performMenuAction(id, ctx));
   }
 
+  // Focus ring on the selected row only after keyboard use; a click focuses the scroller programmatically.
+  let keyboardNav = $state(false);
+
   function onKeydown(e: KeyboardEvent) {
+    keyboardNav = true;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault();
@@ -301,13 +305,17 @@
 
   <div
     class="scroller"
+    class:kbd={keyboardNav}
     bind:this={scroller}
     bind:clientHeight={viewportH}
     onscroll={() => (scrollTop = scroller?.scrollTop ?? 0)}
     onclick={onClick}
     oncontextmenu={onContextMenu}
     onkeydown={onKeydown}
-    onpointerdown={onPointerDown}
+    onpointerdown={() => {
+      keyboardNav = false;
+      onPointerDown();
+    }}
     role="listbox"
     aria-label="Commit history"
     tabindex="0"
@@ -370,7 +378,7 @@
     padding: 0 10px;
     overflow: hidden;
     color: var(--muted);
-    font-size: 11px;
+    font-size: var(--fs-xs);
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
@@ -401,6 +409,10 @@
     overscroll-behavior: contain;
     outline: none;
   }
+  /* Keyboard focus lives on the scroller; show it on the selected row. */
+  .scroller.kbd:focus :global(.row.selected) {
+    box-shadow: inset 0 0 0 2px var(--focus);
+  }
   .content {
     position: relative;
     min-height: 100%;
@@ -423,12 +435,13 @@
     inset: 40% 0 auto;
     margin: 0;
     color: var(--muted);
-    font-size: 13px;
+    font-size: var(--fs-md);
     text-align: center;
   }
+  /* Floats over the right end of the column header row, so it never covers a commit. */
   .searchwrap {
     position: absolute;
-    top: 36px;
+    top: 3px;
     right: 14px;
     z-index: 5;
   }
