@@ -12,6 +12,7 @@
   import { highlightLines } from './highlight';
   import SplitDiff from './SplitDiff.svelte';
   import UnifiedDiff from './UnifiedDiff.svelte';
+  import Icon from '../Icon.svelte';
 
   const FILE_VIEW_CONTEXT = 1_000_000;
   const DIFF_VIEW_CONTEXT = 3;
@@ -106,6 +107,13 @@
   }
 
   const title = $derived(centre?.origPath ? `${centre.origPath} → ${centre.path}` : (centre?.path ?? ''));
+  /** Where the diff comes from, so the header answers "which version am I looking at?". */
+  const sourceLabel = $derived.by(() => {
+    const s = centre?.source;
+    if (!s) return '';
+    if (s.kind === 'commit') return s.oid.slice(0, 7);
+    return { unstaged: 'Unstaged', staged: 'Staged', untracked: 'Untracked', workingFile: 'Working file' }[s.kind];
+  });
 </script>
 
 <svelte:window onkeydown={onKeydown} />
@@ -113,20 +121,20 @@
 {#if centre}
   <div class="diffview">
     <header>
-      <svg class="icon" viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
-        <path d="M4 1.5h5l3.5 3.5v9.5h-8.5z M9 1.5v3.5h3.5" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" />
-      </svg>
+      <span class="icon"><Icon name="file" /></span>
       <span class="path" {title}>{title}</span>
-      <button class="x" type="button" title="Back to graph (Esc)" aria-label="Close diff" onclick={() => repo.showGraph()}>×</button>
+      {#if sourceLabel}<span class="source" class:mono={centre.source.kind === 'commit'}>{sourceLabel}</span>{/if}
+      <span class="grow"></span>
+      <button class="iconbtn" type="button" title="Back to graph (Esc)" aria-label="Close diff" onclick={() => repo.showGraph()}><Icon name="close" /></button>
     </header>
     <div class="toolbar">
       <div class="seg" role="group" aria-label="View">
-        <button type="button" class:on={centre.view === 'file'} aria-pressed={centre.view === 'file'} onclick={() => setView('file')}>File View</button>
-        <button type="button" class:on={centre.view === 'diff'} aria-pressed={centre.view === 'diff'} onclick={() => setView('diff')}>Diff View</button>
+        <button type="button" class:on={centre.view === 'file'} aria-pressed={centre.view === 'file'} onclick={() => setView('file')}>File</button>
+        <button type="button" class:on={centre.view === 'diff'} aria-pressed={centre.view === 'diff'} onclick={() => setView('diff')}>Diff</button>
       </div>
       <span class="grow"></span>
-      <button type="button" title="Previous hunk ([)" aria-label="Previous hunk" onclick={() => stepTo(-1)}>↑</button>
-      <button type="button" title="Next hunk (])" aria-label="Next hunk" onclick={() => stepTo(1)}>↓</button>
+      <button class="iconbtn" type="button" title="Previous change ([)" aria-label="Previous change" onclick={() => stepTo(-1)}><Icon name="arrowUp" /></button>
+      <button class="iconbtn" type="button" title="Next change (])" aria-label="Next change" onclick={() => stepTo(1)}><Icon name="arrowDown" /></button>
       <div class="seg" role="group" aria-label="Layout">
         <button type="button" class:on={session.diffMode === 'unified'} aria-pressed={session.diffMode === 'unified'} onclick={() => (session.diffMode = 'unified')}>Unified</button>
         <button type="button" class:on={session.diffMode === 'split'} aria-pressed={session.diffMode === 'split'} onclick={() => (session.diffMode = 'split')}>Split</button>
@@ -174,58 +182,34 @@
     color: var(--muted);
   }
   .path {
-    flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font: 12px var(--mono);
+    font: var(--fs-sm) var(--mono);
   }
-  .x {
-    padding: 0 8px;
-    border: 0;
-    background: transparent;
-    font-size: 18px;
-    line-height: 1;
-    color: var(--muted);
-  }
-  .x:hover {
-    color: var(--text);
+  .source {
+    flex: none;
+    padding: 0 7px;
+    border-radius: 9px;
+    background: var(--chip);
+    color: var(--chip-text);
+    font-size: var(--fs-xs);
+    line-height: 18px;
   }
   .toolbar {
     display: flex;
     flex: none;
     align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
+    gap: 4px;
+    padding: 5px 8px 5px 12px;
     border-bottom: 1px solid var(--line);
   }
-  .toolbar button {
-    padding: 2px 9px;
-    font-size: 12px;
+  .toolbar .seg:last-child {
+    margin-left: 6px;
   }
   .grow {
     flex: 1;
-  }
-  .seg {
-    display: inline-flex;
-  }
-  .seg button {
-    border-radius: 0;
-    background: transparent;
-    color: var(--muted);
-  }
-  .seg button:first-child {
-    border-radius: 5px 0 0 5px;
-  }
-  .seg button:last-child {
-    border-radius: 0 5px 5px 0;
-    border-left: 0;
-  }
-  .seg button.on {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
   }
   .body {
     flex: 1;
@@ -236,9 +220,14 @@
     padding: 24px 16px;
     text-align: center;
     color: var(--muted);
-    font-size: 12px;
+    font-size: var(--fs-sm);
   }
   .note.err {
-    color: var(--del);
+    color: var(--danger-text);
+    text-align: left;
+    white-space: pre-wrap;
+    font-family: var(--mono);
+    user-select: text;
+    -webkit-user-select: text;
   }
 </style>

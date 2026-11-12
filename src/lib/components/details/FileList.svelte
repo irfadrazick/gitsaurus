@@ -5,6 +5,7 @@
   import type { Change, ChangedFile, TreeNode } from '../../types';
   import { buildTree } from '../../util/tree';
   import type { WipFile } from '../../util/wip';
+  import Icon from '../Icon.svelte';
 
   let {
     files,
@@ -57,9 +58,9 @@
         <span class="badge {file.change}" title={LABEL[file.change]}>{LETTER[file.change]}</span>
       {/if}
       {#if name !== null}
-        <span class="base">{name}</span>
+        <span class="pathtext"><span class="base">{name}</span></span>
       {:else}
-        <span class="dir">{dir(file.path)}</span><span class="base">{base(file.path)}</span>
+        <span class="pathtext">{#if dir(file.path)}<span class="dir">{dir(file.path)}</span>{/if}<span class="base">{base(file.path)}</span></span>
       {/if}
       {#if file.origPath}<span class="dir orig">← {file.origPath}</span>{/if}
     </button>
@@ -71,7 +72,7 @@
   {#each list as n (n.path)}
     {#if n.isDir}
       <button class="folder" type="button" style:padding-left="{8 + depth * 14}px" aria-expanded={!collapsed.has(n.path)} onclick={() => toggle(n.path)}>
-        <span class="chev" class:closed={collapsed.has(n.path)}>▾</span>{n.name}
+        <span class="chev" class:closed={collapsed.has(n.path)}><Icon name="chevronDown" size={12} /></span>{n.name}
       </button>
       {#if !collapsed.has(n.path)}{@render nodes(n.children, depth + 1)}{/if}
     {:else if n.file}
@@ -121,28 +122,6 @@
     padding: 6px 8px;
     border-bottom: 1px solid var(--line);
   }
-  .seg {
-    display: inline-flex;
-  }
-  .seg button {
-    padding: 1px 8px;
-    border-radius: 0;
-    font-size: var(--font-min);
-    background: transparent;
-    color: var(--muted);
-  }
-  .seg button:first-child {
-    border-radius: 5px 0 0 5px;
-  }
-  .seg button:last-child {
-    border-radius: 0 5px 5px 0;
-    border-left: 0;
-  }
-  .seg button.on {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
   .items {
     flex: 1;
     min-height: 0;
@@ -156,12 +135,18 @@
     min-height: 26px;
     padding-right: 6px;
   }
-  .row:not(:hover):not(:focus-within) .actions {
+  .row:not(:hover):not(:focus-within):not(.sel) .actions {
     visibility: hidden;
   }
-  .row:hover,
+  .row:hover {
+    background: var(--hover);
+  }
   .row.sel {
-    background: color-mix(in srgb, var(--accent) 22%, transparent);
+    background: var(--sel);
+    color: var(--sel-text);
+  }
+  .row.sel .dir {
+    color: var(--sel-muted);
   }
   .open,
   .folder {
@@ -177,7 +162,15 @@
     background: transparent;
     text-align: left;
     white-space: nowrap;
-    font-size: 12px;
+    font-size: var(--fs-sm);
+  }
+  .open:hover:not(:disabled),
+  .open:active:not(:disabled) {
+    background: transparent;
+  }
+  .pathtext {
+    display: flex;
+    min-width: 0;
   }
   .open {
     padding-left: 0;
@@ -186,13 +179,13 @@
     width: 100%;
     color: var(--muted);
   }
-  .folder:hover {
-    background: color-mix(in srgb, var(--text) 6%, transparent);
+  .folder:hover:not(:disabled) {
+    background: var(--hover);
   }
   .chev {
-    display: inline-block;
-    width: 10px;
-    font-size: 10px;
+    display: inline-flex;
+    width: 12px;
+    transition: transform 0.12s ease-out;
   }
   .chev.closed {
     transform: rotate(-90deg);
@@ -201,15 +194,15 @@
     flex: none;
     width: 16px;
     height: 16px;
-    border-radius: 4px;
+    border-radius: var(--radius-sm);
     text-align: center;
     font: 700 10px/16px var(--mono);
     color: #11151b;
     background: var(--lane-5);
   }
   .badge.conflict {
-    background: var(--del);
-    color: #fff;
+    background: var(--danger-fill);
+    color: var(--on-accent);
   }
   .badge.added {
     background: var(--add);
@@ -231,7 +224,8 @@
   }
   .dir.orig {
     flex: none;
-    font-size: var(--font-min);
+    margin-left: 6px;
+    font-size: var(--fs-xs);
   }
   .base {
     flex: none;

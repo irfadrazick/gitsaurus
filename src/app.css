@@ -20,6 +20,64 @@
   --lane-9: #d2a8ff;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --font-min: 11px;
+
+  /* Text sizes: one scale for the whole app. */
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-md: 13px;
+  --fs-lg: 16px;
+
+  /* Corners. */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 8px;
+
+  /* Interaction states, shared by every list, row and control. */
+  --hover: rgb(255 255 255 / 0.05);
+  --active: rgb(255 255 255 / 0.09);
+  /* Background of small labels: date chips, counts, source tags. */
+  --chip: rgb(255 255 255 / 0.07);
+  --chip-text: #9ea7b3;
+  --sel: color-mix(in srgb, var(--accent) 30%, transparent);
+  --sel-text: #f0f3f6;
+  --sel-muted: #a8b3bf;
+  --focus: #58a6ff;
+  --on-accent: #fff;
+  --danger-fill: #da3633;
+  --danger-text: #ff7b72;
+  --match: #e3b341;
+  --shadow-pop: 0 8px 24px rgb(0 0 0 / 0.45);
+
+  accent-color: var(--accent);
+  caret-color: var(--focus);
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--sel-text);
+}
+
+/* Thin dark scrollbars in place of the platform default. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a404a transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a404a;
+  border: 3px solid transparent;
+  border-radius: 6px;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background-color: #4a515c;
+}
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
 
 * {
@@ -53,39 +111,92 @@ textarea {
 button {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 4px 10px;
-  cursor: pointer;
+  cursor: default;
 }
-button:hover {
-  border-color: var(--muted);
+button:hover:not(:disabled) {
+  border-color: #4a515c;
+  background-color: color-mix(in srgb, var(--text) 6%, var(--panel));
+}
+button:active:not(:disabled) {
+  background-color: color-mix(in srgb, var(--text) 11%, var(--panel));
+}
+button:disabled {
+  opacity: 0.45;
 }
 button.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
+}
+button.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, #fff 10%, var(--accent));
+  border-color: color-mix(in srgb, #fff 10%, var(--accent));
+}
+button.primary:active:not(:disabled) {
+  background: color-mix(in srgb, #000 12%, var(--accent));
 }
 button.danger {
-  background: var(--del);
-  border-color: var(--del);
-  color: #fff;
+  background: var(--danger-fill);
+  border-color: var(--danger-fill);
+  color: var(--on-accent);
+}
+button.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, #fff 8%, var(--danger-fill));
+  border-color: color-mix(in srgb, #fff 8%, var(--danger-fill));
+}
+/* A destructive action that is not the expected next step: red text, no fill. */
+button.danger-quiet {
+  background: transparent;
+  border-color: color-mix(in srgb, var(--danger-text) 45%, transparent);
+  color: var(--danger-text);
+}
+button.danger-quiet:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--danger-text) 12%, transparent);
+  border-color: var(--danger-text);
 }
 
 input[type="text"],
+input[type="search"],
+input[type="number"],
 input:not([type]),
 textarea {
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 5px;
+  border-radius: var(--radius-sm);
   padding: 5px 8px;
   user-select: text;
   -webkit-user-select: text;
 }
 input:focus,
-textarea:focus,
-button:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 0;
+textarea:focus {
+  outline: none;
+  border-color: var(--focus);
+  box-shadow: 0 0 0 1px var(--focus);
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+input:focus-visible,
+textarea:focus-visible {
+  outline: none;
+}
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: currentColor;
+  opacity: 0.55;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 4.5l7 7M11.5 4.5l-7 7' stroke='black' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+input[type="search"]::-webkit-search-cancel-button:hover {
+  opacity: 0.9;
+}
+::placeholder {
+  color: var(--muted);
 }
 
 .mono {
@@ -96,4 +207,77 @@ button:focus-visible {
 }
 .small {
   font-size: var(--font-min);
+}
+
+/* Segmented control: a small group of mutually exclusive toggles (view modes, path/tree). */
+.seg {
+  display: inline-flex;
+  flex: none;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+.seg button {
+  padding: 1px 9px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font-size: var(--fs-sm);
+  line-height: 20px;
+}
+.seg button:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.seg button.on,
+.seg button.on:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 13%, var(--panel));
+  color: var(--sel-text);
+  box-shadow: 0 1px 1px rgb(0 0 0 / 0.25);
+}
+
+/* Borderless square icon button (close, collapse, step). */
+.iconbtn {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+}
+.iconbtn:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text);
+}
+.iconbtn:active:not(:disabled) {
+  background: var(--active);
+}
+
+/* Modal dialog shell shared by confirm/prompt dialogs and Settings. */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  background: rgb(0 0 0 / 0.5);
+}
+.dialog {
+  width: min(440px, calc(100vw - 32px));
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
+}
+.dialog h2 {
+  margin: 0 0 8px;
+  font-size: var(--fs-md);
+  font-weight: 600;
 }

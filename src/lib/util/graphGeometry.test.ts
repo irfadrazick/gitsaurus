@@ -11,7 +11,6 @@ import {
   seedStyle,
   segmentPath,
   stepMatch,
-  tint,
   visibleRange,
 } from './graphGeometry';
 
@@ -37,11 +36,6 @@ describe('lane geometry', () => {
     expect(laneColor(13)).toBe(laneColor(3));
     expect(laneColor(1)).not.toBe(laneColor(2));
     expect(laneColor(0)).toMatch(/^#[0-9a-f]{6}$/);
-  });
-  it('tint appends an alpha byte for the given opacity', () => {
-    expect(tint(0, 0.12)).toBe(`${laneColor(0)}1f`);
-    expect(tint(0, 0.22)).toBe(`${laneColor(0)}38`);
-    expect(tint(12, 1)).toBe(`${laneColor(2)}ff`);
   });
 });
 

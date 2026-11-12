@@ -31,17 +31,19 @@ export function conflictSides(op: Operation | null): { ours: string; theirs: str
   return { ours: `"${op.oursLabel}"`, theirs: `"${op.theirsLabel}"` };
 }
 
-/** Text of the conflict banner. */
+/** Text of the conflict banner: what is happening (naming both sides when known), then the conflict count. */
 export function bannerText(op: Operation, conflicted: number): string {
-  const name = NAME[op.kind];
-  const n = `${conflicted} ${conflicted === 1 ? 'file' : 'files'}`;
-  if (op.kind === 'rebase') {
-    const head = op.step !== null && op.total !== null ? `Rebase step ${op.step}/${op.total}` : 'Rebase';
-    if (conflicted === 0) return `${head}: all conflicts resolved`;
-    return `${head}: ${conflicted} conflicted ${conflicted === 1 ? 'file' : 'files'}`;
-  }
-  if (conflicted === 0) return `${name} in progress: all conflicts resolved`;
-  return `${name} conflict in ${n}`;
+  const ours = op.oursLabel;
+  const theirs = op.theirsLabel;
+  let what: string;
+  if (op.kind === 'merge') what = theirs && ours ? `Merging ${theirs} into ${ours}` : 'Merge';
+  else if (op.kind === 'rebase') what = theirs && ours ? `Rebasing ${theirs} onto ${ours}` : 'Rebase';
+  else if (op.kind === 'cherryPick') what = theirs ? `Cherry-picking ${theirs}` : 'Cherry-pick';
+  else what = theirs ? `Reverting ${theirs}` : 'Revert';
+  if (op.kind === 'rebase' && op.step !== null && op.total !== null) what += `, step ${op.step}/${op.total}`;
+  const state =
+    conflicted === 0 ? 'all conflicts resolved' : `${conflicted} conflicted ${conflicted === 1 ? 'file' : 'files'}`;
+  return `${what}: ${state}`;
 }
 
 export const canCommit = (summary: string, staged: number, amend: boolean) =>

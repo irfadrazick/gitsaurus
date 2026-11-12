@@ -37,15 +37,24 @@
     finish(req.type === 'confirm' ? false : null);
   }
 
-  async function validate(v: string) {
+  // Validate after a short pause in typing, so the error doesn't flash on every keystroke.
+  // Any pending error clears as soon as the user types again.
+  let pause: ReturnType<typeof setTimeout> | undefined;
+  function validate(v: string) {
     if (req?.type !== 'prompt' || !req.validate) return;
+    const check = req.validate;
     const mine = ++seq;
-    const msg = await req.validate(v);
-    if (mine === seq) error = msg;
+    error = null;
+    clearTimeout(pause);
+    pause = setTimeout(async () => {
+      const msg = await check(v);
+      if (mine === seq) error = msg;
+    }, 400);
   }
 
   async function submitPrompt() {
     if (req?.type !== 'prompt') return;
+    clearTimeout(pause);
     if (req.validate) {
       const mine = ++seq;
       const msg = await req.validate(value);
@@ -70,7 +79,7 @@
 <svelte:window onkeydowncapture={req ? onKey : undefined} />
 
 {#if req}
-  <div class="backdrop" role="presentation" onmousedown={(e) => e.target === e.currentTarget && cancel()}>
+  <div class="dialog-backdrop" role="presentation" onmousedown={(e) => e.target === e.currentTarget && cancel()}>
     <div class="dialog" role="dialog" aria-modal="true" aria-label={req.title}>
       <h2>{req.title}</h2>
 
@@ -116,34 +125,16 @@
 {/if}
 
 <style>
-  .backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgb(0 0 0 / 0.5);
-    display: grid;
-    place-items: center;
-    z-index: 100;
-  }
-  .dialog {
-    width: min(440px, calc(100vw - 32px));
-    background: var(--panel);
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    padding: 16px;
-    box-shadow: 0 12px 40px rgb(0 0 0 / 0.5);
-  }
-  h2 {
-    margin: 0 0 8px;
-    font-size: 14px;
-  }
   .body {
     margin: 0 0 12px;
     max-height: 50vh;
     overflow-y: auto;
-    color: var(--muted);
+    color: color-mix(in srgb, var(--text) 85%, var(--muted));
+    line-height: 1.5;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
     user-select: text;
+    -webkit-user-select: text;
   }
   .field {
     display: flex;
@@ -151,7 +142,7 @@
     gap: 4px;
   }
   .err {
-    color: var(--del);
+    color: var(--danger-text);
     margin-top: 6px;
   }
   .choices {
@@ -167,10 +158,9 @@
     display: flex;
     justify-content: flex-end;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 16px;
   }
-  button:disabled {
-    opacity: 0.5;
-    cursor: default;
+  .actions button {
+    min-width: 72px;
   }
 </style>

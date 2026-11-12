@@ -9,12 +9,14 @@ const labels = (m: { label: string }[]) => m.map((i) => i.label);
 it('branch menu for non-head branch', () => {
   const m = branchMenu(ctx());
   expect(labels(m)).toEqual([
-    'Pull (fast-forward if possible)', 'Push', 'Set Upstream', 'Merge feat into main', 'Rebase main onto feat',
-    'Checkout feat', 'Create branch here', 'Cherry pick commit', 'Reset main to this commit', 'Revert commit',
-    'Rename feat', 'Delete feat', 'Copy branch name', 'Copy commit sha', 'Create tag here', 'Create annotated tag here',
+    'Pull (fast-forward if possible)', 'Push', 'Set upstream…', 'Merge feat into main', 'Rebase main onto feat',
+    'Checkout feat', 'Create branch here…', 'Cherry-pick commit', 'Reset main to this commit', 'Revert commit',
+    'Rename feat…', 'Delete feat', 'Copy branch name', 'Copy commit SHA', 'Create tag here…', 'Create annotated tag here…',
   ]);
   const reset = m.find((i) => i.id === 'reset')!;
-  expect(reset.submenu!.map((i) => i.label)).toEqual(['Soft', 'Mixed', 'Hard']);
+  expect(reset.submenu!.map((i) => i.label)).toEqual([
+    'Soft: keep changes staged', 'Mixed: keep changes unstaged', 'Hard: discard all changes',
+  ]);
   expect(reset.submenu!.map((i) => i.id)).toEqual(['reset.soft', 'reset.mixed', 'reset.hard']);
   expect(reset.submenu![2].danger).toBe(true);
   expect(m.find((i) => i.id === 'delete')!.danger).toBe(true);
@@ -38,7 +40,10 @@ it('commit menu has no branch-specific items', () => {
 });
 
 it('tag and stash menus', () => {
-  expect(labels(tagMenu(ctx({ name: 'v1' })))).toEqual(['Checkout v1', 'Push tag', 'Delete v1', 'Copy tag name']);
+  expect(labels(tagMenu(ctx({ name: 'v1' })))).toEqual(['Checkout v1', 'Push tag', 'Copy tag name', 'Delete v1']);
   expect(labels(stashMenu(ctx()))).toEqual(['Apply', 'Pop', 'Delete']);
+  // Destructive items sit in their own group, apart from everyday actions.
+  expect(tagMenu(ctx({ name: 'v1' })).find((i) => i.id === 'delete')!.separatorBefore).toBe(true);
+  expect(stashMenu(ctx()).find((i) => i.id === 'stashDrop')!.separatorBefore).toBe(true);
   expect(stashMenu(ctx()).find((i) => i.id === 'stashDrop')!.danger).toBe(true);
 });

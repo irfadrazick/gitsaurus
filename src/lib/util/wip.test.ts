@@ -25,16 +25,20 @@ it('maps the worktree side, untracked and conflicts', () => {
 });
 
 it('banner text', () => {
-  const op = (kind: 'merge' | 'rebase' | 'cherryPick' | 'revert', step: number | null = null, total: number | null = null) =>
-    ({ kind, step, total, oursLabel: '', theirsLabel: '' });
-  expect(bannerText(op('merge'), 2)).toBe('Merge conflict in 2 files');
-  expect(bannerText(op('merge'), 1)).toBe('Merge conflict in 1 file');
-  expect(bannerText(op('merge'), 0)).toBe('Merge in progress: all conflicts resolved');
-  expect(bannerText(op('rebase', 3, 7), 2)).toBe('Rebase step 3/7: 2 conflicted files');
-  expect(bannerText(op('rebase', 3, 7), 0)).toBe('Rebase step 3/7: all conflicts resolved');
+  type K = 'merge' | 'rebase' | 'cherryPick' | 'revert';
+  const op = (kind: K, step: number | null = null, total: number | null = null, oursLabel = '', theirsLabel = '') =>
+    ({ kind, step, total, oursLabel, theirsLabel });
+  // Names both sides when the backend knows them.
+  expect(bannerText(op('merge', null, null, 'main', 'dark-theme'), 1)).toBe('Merging dark-theme into main: 1 conflicted file');
+  expect(bannerText(op('merge', null, null, 'main', 'dark-theme'), 0)).toBe('Merging dark-theme into main: all conflicts resolved');
+  expect(bannerText(op('rebase', 3, 7, 'main', 'feat'), 2)).toBe('Rebasing feat onto main, step 3/7: 2 conflicted files');
+  expect(bannerText(op('cherryPick', null, null, 'main', 'a1b2c3d'), 1)).toBe('Cherry-picking a1b2c3d: 1 conflicted file');
+  expect(bannerText(op('revert', null, null, 'main', 'a1b2c3d'), 2)).toBe('Reverting a1b2c3d: 2 conflicted files');
+  // Falls back to the operation name when a side is unknown.
+  expect(bannerText(op('merge'), 2)).toBe('Merge: 2 conflicted files');
+  expect(bannerText(op('merge'), 0)).toBe('Merge: all conflicts resolved');
+  expect(bannerText(op('rebase', 3, 7), 0)).toBe('Rebase, step 3/7: all conflicts resolved');
   expect(bannerText(op('rebase'), 1)).toBe('Rebase: 1 conflicted file');
-  expect(bannerText(op('cherryPick'), 1)).toBe('Cherry-pick conflict in 1 file');
-  expect(bannerText(op('revert'), 2)).toBe('Revert conflict in 2 files');
 });
 
 it('canCommit', () => {

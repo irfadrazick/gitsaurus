@@ -5,13 +5,15 @@
   let { hunks, html }: { hunks: Hunk[]; html: ReadonlyMap<DiffLine, string> } = $props();
 
   const marker = (k: DiffLine['kind']) => (k === 'add' ? '+' : k === 'del' ? '-' : ' ');
+  // Conflict markers (<<<<<<< ======= >>>>>>> |||||||) in a conflicted file.
+  const cmark = (t: string) => /^(<{7}|={7}|>{7}|\|{7})( |$)/.test(t);
 </script>
 
 <div class="diff">
   {#each hunks as h, hi (hi)}
     <div class="hunk-head" data-hunk>{h.header}</div>
     {#each h.lines as l, li (li)}
-      <div class="line {l.kind}">
+      <div class="line {l.kind}" class:cmark={cmark(l.text)}>
         <span class="gutter">{l.oldNo ?? ''}</span>
         <span class="gutter">{l.newNo ?? ''}</span>
         {#if l.kind === 'noNewline'}

@@ -6,6 +6,8 @@ export interface MenuItem {
   disabled?: boolean;
   separatorBefore?: boolean;
   submenu?: MenuItem[];
+  /** Right-aligned secondary text, e.g. a shortcut or "Default". */
+  hint?: string;
 }
 
 /**
@@ -29,15 +31,15 @@ const resetItem = (current: string | null): MenuItem => ({
   label: `Reset ${current ?? 'HEAD'} to this commit`,
   separatorBefore: true,
   submenu: [
-    { id: 'reset.soft', label: 'Soft' },
-    { id: 'reset.mixed', label: 'Mixed' },
-    { id: 'reset.hard', label: 'Hard', danger: true },
+    { id: 'reset.soft', label: 'Soft: keep changes staged' },
+    { id: 'reset.mixed', label: 'Mixed: keep changes unstaged' },
+    { id: 'reset.hard', label: 'Hard: discard all changes', danger: true },
   ],
 });
 
 const tagItems = (): MenuItem[] => [
-  { id: 'createTag', label: 'Create tag here', separatorBefore: true },
-  { id: 'createAnnotatedTag', label: 'Create annotated tag here' },
+  { id: 'createTag', label: 'Create tag here…', separatorBefore: true },
+  { id: 'createAnnotatedTag', label: 'Create annotated tag here…' },
 ];
 
 export function branchMenu(c: MenuContext): MenuItem[] {
@@ -45,7 +47,7 @@ export function branchMenu(c: MenuContext): MenuItem[] {
   const items: MenuItem[] = [
     { id: 'pull', label: 'Pull (fast-forward if possible)', disabled: c.detached || !c.hasUpstream },
     { id: 'push', label: 'Push', disabled: c.detached },
-    { id: 'setUpstream', label: 'Set Upstream', disabled: c.detached },
+    { id: 'setUpstream', label: 'Set upstream…', disabled: c.detached },
   ];
   if (!c.isHeadBranch) {
     items.push(
@@ -55,16 +57,16 @@ export function branchMenu(c: MenuContext): MenuItem[] {
     );
   }
   items.push(
-    { id: 'createBranch', label: 'Create branch here', separatorBefore: c.isHeadBranch },
-    { id: 'cherryPick', label: 'Cherry pick commit' },
+    { id: 'createBranch', label: 'Create branch here…', separatorBefore: c.isHeadBranch },
+    { id: 'cherryPick', label: 'Cherry-pick commit' },
     resetItem(c.current),
     { id: 'revert', label: 'Revert commit' },
-    { id: 'rename', label: `Rename ${c.name}`, separatorBefore: true },
+    { id: 'rename', label: `Rename ${c.name}…`, separatorBefore: true },
   );
   if (!c.isHeadBranch) items.push({ id: 'delete', label: `Delete ${c.name}`, danger: true });
   items.push(
     { id: 'copyBranchName', label: 'Copy branch name', separatorBefore: true },
-    { id: 'copySha', label: 'Copy commit sha' },
+    { id: 'copySha', label: 'Copy commit SHA' },
     ...tagItems(),
   );
   return items;
@@ -74,11 +76,11 @@ export function branchMenu(c: MenuContext): MenuItem[] {
 export function commitMenu(c: MenuContext): MenuItem[] {
   return [
     { id: 'checkout', label: 'Checkout this commit' },
-    { id: 'createBranch', label: 'Create branch here' },
-    { id: 'cherryPick', label: 'Cherry pick commit', separatorBefore: true },
+    { id: 'createBranch', label: 'Create branch here…' },
+    { id: 'cherryPick', label: 'Cherry-pick commit', separatorBefore: true },
     resetItem(c.current),
     { id: 'revert', label: 'Revert commit' },
-    { id: 'copySha', label: 'Copy commit sha', separatorBefore: true },
+    { id: 'copySha', label: 'Copy commit SHA', separatorBefore: true },
     ...tagItems(),
   ];
 }
@@ -87,8 +89,8 @@ export function tagMenu(c: MenuContext): MenuItem[] {
   return [
     { id: 'checkout', label: `Checkout ${c.name}` },
     { id: 'pushTag', label: 'Push tag' },
-    { id: 'delete', label: `Delete ${c.name}`, danger: true },
     { id: 'copyTagName', label: 'Copy tag name', separatorBefore: true },
+    { id: 'delete', label: `Delete ${c.name}`, danger: true, separatorBefore: true },
   ];
 }
 
@@ -96,7 +98,7 @@ export function stashMenu(_c: MenuContext): MenuItem[] {
   return [
     { id: 'stashApply', label: 'Apply' },
     { id: 'stashPop', label: 'Pop' },
-    { id: 'stashDrop', label: 'Delete', danger: true },
+    { id: 'stashDrop', label: 'Delete', danger: true, separatorBefore: true },
   ];
 }
 

@@ -1,10 +1,14 @@
 <script lang="ts">
   import { toasts } from '../../state/toasts.svelte';
+  import Icon from '../Icon.svelte';
+
+  const ICON = { ok: 'checkCircle', info: 'info', error: 'alert' } as const;
 </script>
 
 <div class="toasts" role="status" aria-live="polite">
   {#each toasts.items as t (t.id)}
     <div class="toast {t.kind}">
+      <span class="kind" aria-hidden="true"><Icon name={ICON[t.kind]} size={16} /></span>
       <div class="body">
         <div class="title">{t.title}</div>
         {#if t.detail}<div class="detail mono">{t.detail}</div>{/if}
@@ -13,7 +17,7 @@
           <button class="primary act" onclick={() => { toasts.dismiss(t.id); a.run(); }}>{a.label}</button>
         {/if}
       </div>
-      <button class="x" aria-label="Dismiss" onclick={() => toasts.dismiss(t.id)}>&times;</button>
+      <button class="iconbtn x" aria-label="Dismiss" onclick={() => toasts.dismiss(t.id)}><Icon name="close" size={12} /></button>
     </div>
   {/each}
 </div>
@@ -31,25 +35,24 @@
   }
   .toast {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: flex-start;
     background: var(--panel);
     border: 1px solid var(--line);
-    border-left: 3px solid var(--add);
-    border-radius: 6px;
-    padding: 8px 10px;
-    box-shadow: 0 4px 16px rgb(0 0 0 / 0.4);
+    border-radius: var(--radius-lg);
+    padding: 10px 6px 10px 12px;
+    box-shadow: var(--shadow-pop);
   }
-  .toast.error {
-    border-left-color: var(--del);
+  .kind {
+    display: flex;
+    padding-top: 1px;
+    color: var(--add);
   }
-  .toast.info {
-    border-left-color: var(--accent);
+  .toast.info .kind {
+    color: var(--focus);
   }
-  .act {
-    margin-top: 8px;
-    padding: 3px 10px;
-    font-size: 12px;
+  .toast.error .kind {
+    color: var(--danger-text);
   }
   .body {
     flex: 1;
@@ -60,20 +63,22 @@
   }
   .detail {
     margin-top: 4px;
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--muted);
     white-space: pre-wrap;
     word-break: break-word;
     max-height: 120px;
     overflow: auto;
     user-select: text;
+    -webkit-user-select: text;
+  }
+  .act {
+    margin-top: 8px;
+    padding: 3px 10px;
+    font-size: var(--fs-sm);
   }
   .x {
-    border: 0;
-    background: none;
-    padding: 0 4px;
-    font-size: 16px;
-    line-height: 1;
-    color: var(--muted);
+    width: 20px;
+    height: 20px;
   }
 </style>

@@ -5,13 +5,14 @@
 
 <script lang="ts">
   import * as api from '../../api';
-  import { pullHead, restoreStash } from '../../state/actions';
+  import { pullHead, restoreStash, validator } from '../../state/actions';
   import { openMenu } from '../../state/contextMenu.svelte';
   import { confirm, prompt } from '../../state/modal.svelte';
   import { busy, runOp } from '../../state/ops';
   import { repo } from '../../state/repo.svelte';
   import { settings } from '../../state/settings.svelte';
   import { ui } from '../../state/ui.svelte';
+  import Icon from '../Icon.svelte';
   import type { GitError, PullMode } from '../../types';
   import { fetchIntervalMs, shouldFetch } from '../../util/backgroundFetch';
   import type { MenuItem } from '../../util/menus';
@@ -26,12 +27,11 @@
 
   const PULL_ITEMS: MenuItem[] = [
     { id: 'fetch', label: 'Fetch all' },
-    { id: 'default', label: 'Pull (fast-forward if possible)', separatorBefore: true },
+    { id: 'default', label: 'Pull (fast-forward if possible)', separatorBefore: true, hint: 'Default' },
     { id: 'ffOnly', label: 'Pull (fast-forward only)' },
     { id: 'rebase', label: 'Pull (rebase)' },
   ];
 
-  const msg = (e: unknown) => (e as Partial<GitError>)?.message ?? String(e);
 
   // While a network command runs, its toolbar button becomes Cancel (they have no time limit).
   const pulling = $derived(busy.has('Pull') || busy.has('Fetch'));
@@ -68,7 +68,8 @@
   }
 
   function pullMenu(e: MouseEvent) {
-    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    // Anchor under the whole Pull button, not just the caret.
+    const r = ((e.currentTarget as HTMLElement).parentElement ?? (e.currentTarget as HTMLElement)).getBoundingClientRect();
     openMenu(r.left, r.bottom + 2, PULL_ITEMS, (id) => {
       if (!path) return;
       if (id === 'fetch') runOp('Fetch', () => api.fetchAll(path));
@@ -98,18 +99,7 @@
   async function newBranch() {
     const p = path;
     if (!p) return;
-    const n = await prompt({
-      title: 'Create branch',
-      label: 'Branch name',
-      validate: async (v) => {
-        try {
-          await api.validateBranchName(p, v);
-          return null;
-        } catch (e) {
-          return msg(e);
-        }
-      },
-    });
+    const n = await prompt({ title: 'Create branch', label: 'Branch name', validate: validator(api.validateBranchName, p) });
     if (n) await runOp('Create branch', () => api.createBranch(p, n, 'HEAD', true));
   }
 
@@ -154,7 +144,7 @@
           {/if}
           <span>{pulling ? 'Cancel' : 'Pull'}</span>
         </button>
-        <button class="caret" onclick={pullMenu} disabled={pulling} aria-label="Pull options" title="Pull options">▾</button>
+        <button class="caret" onclick={pullMenu} disabled={pulling} aria-label="Pull options" title="Pull options"><Icon name="chevronDown" size={12} /></button>
       </div>
       <button class="tb" onclick={() => (pushing ? cancelNetwork() : push())} disabled={detached && !pushing} title={pushing ? 'Cancel' : 'Push'}>
         {#if pushing}{@render spinner()}{:else}
@@ -216,7 +206,7 @@
   }
   .detached,
   .fetching {
-    font-size: 11px;
+    font-size: var(--fs-xs);
   }
   .fetching {
     color: var(--muted);
@@ -226,9 +216,6 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
-  .mono {
-    font-family: var(--mono);
-  }
   .actions {
     display: flex;
     gap: 2px;
@@ -237,6 +224,14 @@
   .split {
     display: flex;
     align-items: stretch;
+    border-radius: var(--radius);
+  }
+  .split:hover:not(:has(:disabled)) {
+    background: var(--hover);
+  }
+  .split .tb {
+    border-radius: var(--radius) 0 0 var(--radius);
+    padding-right: 4px;
   }
   .tb,
   .caret {
@@ -244,7 +239,7 @@
     border: 0;
     color: var(--text);
     cursor: default;
-    border-radius: 6px;
+    border-radius: var(--radius);
   }
   .tb {
     display: flex;
@@ -255,8 +250,11 @@
     min-width: 52px;
   }
   .tb span {
-    font-size: 11px;
+    font-size: var(--fs-xs);
     color: var(--muted);
+  }
+  .tb:hover:not(:disabled) span {
+    color: var(--text);
   }
   .tb svg,
   .spin {
@@ -269,19 +267,27 @@
     stroke-linejoin: round;
   }
   .caret {
-    padding: 0 3px;
-    font-size: 11px;
+    display: grid;
+    place-items: center;
+    width: 18px;
+    padding: 0;
+    border-radius: 0 var(--radius) var(--radius) 0;
     color: var(--muted);
-    margin-left: -6px;
-    align-self: flex-start;
-    margin-top: 4px;
   }
   .tb:hover:not(:disabled),
-  .caret:hover {
-    background: rgb(255 255 255 / 0.06);
+  .caret:hover:not(:disabled) {
+    background: var(--hover);
+  }
+  .tb:active:not(:disabled),
+  .caret:active:not(:disabled) {
+    background: var(--active);
+  }
+  .split .tb:hover:not(:disabled),
+  .split .caret:hover:not(:disabled) {
+    background: var(--hover);
   }
   .tb.on {
-    background: rgb(255 255 255 / 0.1);
+    background: var(--active);
   }
   .tb.on span {
     color: var(--text);
