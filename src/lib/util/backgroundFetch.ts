@@ -3,5 +3,9 @@ export function fetchIntervalMs(min: number): number | null {
   return Number.isFinite(min) && min > 0 ? min * 60_000 : null;
 }
 
-/** A background fetch tick runs only when fetching is on and no foreground operation is in flight. */
-export const shouldFetch = (busy: boolean, intervalMin: number) => !busy && fetchIntervalMs(intervalMin) !== null;
+/**
+ * A background fetch tick runs only when fetching is on, no foreground operation is
+ * in flight and the previous background fetch has finished (ticks never overlap).
+ */
+export const shouldFetch = (busy: boolean, intervalMin: number, inFlight: boolean) =>
+  !busy && !inFlight && fetchIntervalMs(intervalMin) !== null;

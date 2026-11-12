@@ -8,8 +8,10 @@ it('converts minutes to ms, 0 or invalid = off', () => {
   expect(fetchIntervalMs(Number.NaN)).toBeNull();
 });
 
-it('skips a tick while any op is busy or no repo/interval', () => {
-  expect(shouldFetch(false, 5)).toBe(true);
-  expect(shouldFetch(true, 5)).toBe(false);
-  expect(shouldFetch(false, 0)).toBe(false);
+it('skips a tick while any op is busy, a fetch is in flight or the interval is off', () => {
+  expect(shouldFetch(false, 5, false)).toBe(true);
+  expect(shouldFetch(true, 5, false)).toBe(false);
+  expect(shouldFetch(false, 0, false)).toBe(false);
+  // Ticks never overlap: the previous background fetch is still running.
+  expect(shouldFetch(false, 5, true)).toBe(false);
 });

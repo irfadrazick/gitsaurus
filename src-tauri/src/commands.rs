@@ -496,9 +496,11 @@ pub async fn mark_resolved(
     .await
 }
 
+/// Runs WITHOUT the repo lock, like a read: git takes its own ref locks, and a
+/// (background) fetch waiting on the network must not block local operations.
 #[tauri::command]
-pub async fn fetch_all(state: State<'_, AppState>, repo: String) -> GitResult<()> {
-    write(state.inner(), repo, move |git| remote::fetch_all(&git)).await
+pub async fn fetch_all(repo: String) -> GitResult<()> {
+    read(repo, move |git| remote::fetch_all(&git)).await
 }
 
 #[tauri::command]

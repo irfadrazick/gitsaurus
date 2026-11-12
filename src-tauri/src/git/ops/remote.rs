@@ -38,7 +38,7 @@ fn upstream_of(git: &Git, branch: &str) -> GitResult<Option<(String, String)>> {
 }
 
 pub fn fetch_all(git: &Git) -> GitResult<()> {
-    git.run(&["fetch", "--all", "--prune", "--tags"])
+    git.run_network(&["fetch", "--all", "--prune", "--tags"])
         .map(|_| ())
 }
 
@@ -59,7 +59,7 @@ pub fn pull(git: &Git, mode: PullMode) -> GitResult<OpOutcome> {
             }
         }
     };
-    let res = git.run(&args);
+    let res = git.run_network(&args);
     conflict_outcome(git, res)
 }
 
@@ -77,7 +77,7 @@ pub fn pull_branch(git: &Git, local: &str) -> GitResult<()> {
     };
     // No leading `+`: a non-fast-forward update is rejected, never forced.
     let spec = format!("{remote_ref}:refs/heads/{local}");
-    git.run(&["fetch", &remote, &spec]).map(|_| ())
+    git.run_network(&["fetch", &remote, &spec]).map(|_| ())
 }
 
 fn map_push_error(e: GitError) -> GitError {
@@ -128,7 +128,9 @@ pub fn push(git: &Git, branch: &str, force: bool) -> GitResult<()> {
         args.push(branch.to_string());
     }
     let refs: Vec<&str> = args.iter().map(String::as_str).collect();
-    git.run(&refs).map(|_| ()).map_err(map_push_error)
+    git.run_network(&refs)
+        .map(|_| ())
+        .map_err(map_push_error)
 }
 
 pub fn set_upstream(git: &Git, local: &str, remote_branch: &str) -> GitResult<()> {
@@ -143,5 +145,5 @@ pub fn push_tag(git: &Git, tag: &str, remote: Option<&str>) -> GitResult<()> {
     let remote = remote.unwrap_or("origin");
     safe_target(remote)?;
     let spec = format!("refs/tags/{tag}");
-    git.run(&["push", remote, &spec]).map(|_| ())
+    git.run_network(&["push", remote, &spec]).map(|_| ())
 }

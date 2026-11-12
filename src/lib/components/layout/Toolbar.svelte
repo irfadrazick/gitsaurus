@@ -1,3 +1,8 @@
+<script lang="ts" module>
+  /** Repo whose background fetch is running (module-level so it survives a remount); ticks never overlap. */
+  const bg = $state<{ fetching: string | null }>({ fetching: null });
+</script>
+
 <script lang="ts">
   import * as api from '../../api';
   import { restoreStash } from '../../state/actions';
@@ -35,19 +40,23 @@
     const ms = fetchIntervalMs(min);
     if (!p || ms === null) return;
     const id = setInterval(async () => {
-      if (!shouldFetch(busy.size > 0, min) || repo.path !== p) return;
+      if (!shouldFetch(busy.size > 0, min, bg.fetching !== null) || repo.path !== p) return;
+      bg.fetching = p;
       try {
         await api.fetchAll(p);
         if (repo.path === p) await repo.refresh(['Git']);
       } catch (e) {
         console.warn('background fetch failed', e);
+      } finally {
+        bg.fetching = null;
       }
     }, ms);
     return () => clearInterval(id);
   });
 
   function pullMode(mode: PullMode) {
-    if (path) runOp('Pull', () => api.pull(path, mode));
+    // Busy guard: a double-click (or the menu) must not queue a second pull.
+    if (path && !busy.has('Pull')) runOp('Pull', () => api.pull(path, mode));
   }
 
   function pullMenu(e: MouseEvent) {
@@ -62,7 +71,7 @@
   async function push() {
     const p = path;
     const b = branch;
-    if (!p || !b) return;
+    if (!p || !b || busy.has('Push')) return;
     await runOp('Push', () => api.push(p, b, false), {
       // onPushRejected carries no payload, so claim the error here to get at its stderr.
       onError: (e) => {
@@ -121,10 +130,11 @@
       {:else}
         <span class="sep">/</span><span class="branch mono">{oid?.slice(0, 7) ?? ''}</span><span class="detached">detached</span>
       {/if}
+      {#if bg.fetching === path}<span class="fetching" role="status">Fetching…</span>{/if}
     </div>
     <div class="actions">
       <div class="split">
-        <button class="tb" onclick={() => pullMode('default')} title="Pull">
+        <button class="tb" onclick={() => pullMode('default')} disabled={busy.has('Pull')} title="Pull">
           {#if busy.get('Pull')}{@render spinner()}{:else}
             <svg viewBox="0 0 16 16"><path d="M8 2v9M4.5 7.5 8 11l3.5-3.5M3 14h10" /></svg>
           {/if}
@@ -134,7 +144,7 @@
           {#if busy.get('Fetch')}{@render spinner()}{:else}▾{/if}
         </button>
       </div>
-      <button class="tb" onclick={push} disabled={detached} title="Push">
+      <button class="tb" onclick={push} disabled={detached || busy.has('Push')} title="Push">
         {#if busy.get('Push')}{@render spinner()}{:else}
           <svg viewBox="0 0 16 16"><path d="M8 11V2M4.5 5.5 8 2l3.5 3.5M3 14h10" /></svg>
         {/if}
@@ -196,8 +206,13 @@
   .detached {
     color: var(--muted);
   }
-  .detached {
+  .detached,
+  .fetching {
     font-size: 11px;
+  }
+  .fetching {
+    color: var(--muted);
+    margin-left: 4px;
   }
   .branch {
     overflow: hidden;
