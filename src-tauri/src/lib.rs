@@ -70,6 +70,7 @@ pub fn run() {
             commands::pull_branch,
             commands::push,
             commands::set_upstream,
+            commands::cancel_network,
             commands::watch_repo,
             commands::unwatch_repo,
             commands::open_in_editor,

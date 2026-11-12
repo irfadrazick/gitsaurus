@@ -37,9 +37,15 @@ fn upstream_of(git: &Git, branch: &str) -> GitResult<Option<(String, String)>> {
     }
 }
 
+const FETCH_ALL: &[&str] = &["fetch", "--all", "--prune", "--tags"];
+
 pub fn fetch_all(git: &Git) -> GitResult<()> {
-    git.run_network(&["fetch", "--all", "--prune", "--tags"])
-        .map(|_| ())
+    git.run_network(FETCH_ALL).map(|_| ())
+}
+
+/// The periodic fetch: skipped when another network command is running on the repo.
+pub fn background_fetch(git: &Git) -> GitResult<()> {
+    git.run_network_if_idle(FETCH_ALL).map(|_| ())
 }
 
 fn config_is_set(git: &Git, key: &str) -> GitResult<bool> {
@@ -143,5 +149,6 @@ pub fn push_tag(git: &Git, tag: &str, remote: Option<&str>) -> GitResult<()> {
     let remote = remote.unwrap_or("origin");
     safe_target(remote)?;
     let spec = format!("refs/tags/{tag}");
-    git.run_network(&["push", remote, &spec]).map(|_| ())
+    git.run_network_bounded(&["push", remote, &spec])
+        .map(|_| ())
 }

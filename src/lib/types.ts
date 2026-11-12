@@ -67,7 +67,8 @@ export type GitError =
   | { kind: 'notARepo'; message: string }
   | { kind: 'gitMissing'; message: string }
   | { kind: 'pushRejected'; message: string; stderr: string }
-  | { kind: 'failed'; message: string; stderr: string };
+  | { kind: 'failed'; message: string; stderr: string }
+  | { kind: 'cancelled'; message: string };
 
 /** Event payload of "repo-changed". Kinds are lowercase on the wire. */
 export interface RepoChanged { repo: string; kinds: ('git' | 'worktree')[] }
