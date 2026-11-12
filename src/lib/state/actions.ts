@@ -1,6 +1,7 @@
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import * as api from '../api';
 import type { MenuContext } from '../util/menus';
+import { defaultRemote } from '../util/watchDiff';
 import { actionFor, defaultUpstream, isNotMerged, remoteOfUpstream, type MenuKind } from '../util/actionTable';
 import { choose, confirm, prompt } from './modal.svelte';
 import { runOp } from './ops';
@@ -202,7 +203,30 @@ export async function performMenuAction(id: string, ctx: ActionContext): Promise
     case 'deleteBranch': return deleteBranch(ctx);
     case 'deleteTag': {
       const ok = await confirm({ title: `Delete tag ${name}?`, body: `The local tag ${name} will be deleted.`, danger: true, confirmLabel: 'Delete' });
-      if (ok) await runOp('Delete tag', () => api.deleteTag(path, name));
+      if (!ok) return;
+      let remote: string | undefined;
+      const remotes = repo.refs.remotes;
+      if (remotes.length === 1) {
+        const yes = await confirm({
+          title: `Also delete tag ${name} on ${remotes[0]}?`,
+          body: `This runs git push ${remotes[0]} --delete ${name}.`,
+          danger: true,
+          confirmLabel: 'Delete on remote too',
+        });
+        if (yes) remote = remotes[0];
+      } else if (remotes.length > 1) {
+        const def = defaultRemote(remotes);
+        const ordered = def ? [def, ...remotes.filter((r) => r !== def)] : remotes;
+        const pick = await choose({
+          title: `Also delete tag ${name} on a remote?`,
+          options: [
+            { value: '', label: 'Local only' },
+            ...ordered.map((r) => ({ value: r, label: `Also on ${r}` })),
+          ],
+        });
+        if (pick) remote = pick;
+      }
+      await runOp('Delete tag', () => api.deleteTag(path, name, remote));
       return;
     }
     case 'pushTag': await runOp('Push tag', () => api.pushTag(path, name)); return;

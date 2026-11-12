@@ -16,13 +16,17 @@
   import { ui } from './lib/state/ui.svelte';
   import type { ChangeKind, RepoChanged } from './lib/types';
   import { matchShortcut } from './lib/util/shortcuts';
+  import { watchDiff } from './lib/util/watchDiff';
 
   onMount(() => {
     session.init();
     settings.init();
     let unlisten: (() => void) | undefined;
     listen<RepoChanged>('repo-changed', (ev) => {
-      if (ev.payload.repo !== repo.path) return;
+      if (ev.payload.repo !== repo.path) {
+        health.check(ev.payload.repo);
+        return;
+      }
       const kinds: ChangeKind[] = ev.payload.kinds.map((k) => (k === 'git' ? 'Git' : 'Worktree'));
       repo.refresh(kinds);
     })
@@ -57,11 +61,19 @@
     if (!session.loaded) return;
     const path = selected && !health.missing.has(selected) ? selected : null;
     untrack(() => repo.open(path));
-    if (!path) return;
-    api.watchRepo(path).catch(() => {});
-    return () => {
-      api.unwatchRepo(path).catch(() => {});
-    };
+  });
+
+  // Watch every open repo (so dirty dots stay live); unwatch on close.
+  let watched: string[] = [];
+  $effect(() => {
+    if (!session.loaded) return;
+    const next = [...session.openRepos];
+    untrack(() => {
+      const { add, remove } = watchDiff(watched, next);
+      for (const p of add) api.watchRepo(p).catch(() => {});
+      for (const p of remove) api.unwatchRepo(p).catch(() => {});
+      watched = next;
+    });
   });
 
   function onKeydown(e: KeyboardEvent) {
