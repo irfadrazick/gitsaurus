@@ -1,4 +1,5 @@
-export interface Toast { id: number; kind: 'ok' | 'error'; title: string; detail?: string }
+export interface ToastAction { label: string; run: () => unknown }
+export interface Toast { id: number; kind: 'ok' | 'info' | 'error'; title: string; detail?: string; action?: ToastAction }
 
 class Toasts {
   items = $state<Toast[]>([]);
@@ -7,7 +8,8 @@ class Toasts {
   push(t: Omit<Toast, 'id'>) {
     const id = this.#next++;
     this.items.push({ ...t, id });
-    setTimeout(() => this.dismiss(id), t.kind === 'error' ? 8000 : 3500);
+    // A toast with a button stays long enough to read and decide.
+    setTimeout(() => this.dismiss(id), t.action ? 20000 : t.kind === 'error' ? 8000 : 3500);
     return id;
   }
 

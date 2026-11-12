@@ -8,6 +8,10 @@
       <div class="body">
         <div class="title">{t.title}</div>
         {#if t.detail}<div class="detail mono">{t.detail}</div>{/if}
+        {#if t.action}
+          {@const a = t.action}
+          <button class="primary act" onclick={() => { toasts.dismiss(t.id); a.run(); }}>{a.label}</button>
+        {/if}
       </div>
       <button class="x" aria-label="Dismiss" onclick={() => toasts.dismiss(t.id)}>&times;</button>
     </div>
@@ -38,6 +42,14 @@
   }
   .toast.error {
     border-left-color: var(--del);
+  }
+  .toast.info {
+    border-left-color: var(--accent);
+  }
+  .act {
+    margin-top: 8px;
+    padding: 3px 10px;
+    font-size: 12px;
   }
   .body {
     flex: 1;

@@ -5,7 +5,7 @@
 
 <script lang="ts">
   import * as api from '../../api';
-  import { restoreStash } from '../../state/actions';
+  import { pullHead, restoreStash } from '../../state/actions';
   import { openMenu } from '../../state/contextMenu.svelte';
   import { confirm, prompt } from '../../state/modal.svelte';
   import { busy, runOp } from '../../state/ops';
@@ -56,7 +56,8 @@
 
   function pullMode(mode: PullMode) {
     // Busy guard: a double-click (or the menu) must not queue a second pull.
-    if (path && !busy.has('Pull')) runOp('Pull', () => api.pull(path, mode));
+    const p = path;
+    if (p && !busy.has('Pull')) void pullHead(p, mode, (b) => push(p, b));
   }
 
   function pullMenu(e: MouseEvent) {
@@ -68,9 +69,8 @@
     });
   }
 
-  async function push() {
-    const p = path;
-    const b = branch;
+  // Takes the repo and branch explicitly when called later (the pull toast's Push button).
+  async function push(p = path, b = branch) {
     if (!p || !b || busy.has('Push')) return;
     await runOp('Push', () => api.push(p, b, false), {
       // onPushRejected carries no payload, so claim the error here to get at its stderr.
@@ -151,7 +151,7 @@
           {#if busy.get('Fetch')}{@render spinner()}{:else}▾{/if}
         </button>
       </div>
-      <button class="tb" onclick={push} disabled={detached || busy.has('Push')} title="Push">
+      <button class="tb" onclick={() => push()} disabled={detached || busy.has('Push')} title="Push">
         {#if busy.get('Push')}{@render spinner()}{:else}
           <svg viewBox="0 0 16 16"><path d="M8 11V2M4.5 5.5 8 2l3.5 3.5M3 14h10" /></svg>
         {/if}

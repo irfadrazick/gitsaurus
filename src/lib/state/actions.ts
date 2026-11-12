@@ -1,6 +1,8 @@
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import * as api from '../api';
 import type { MenuContext } from '../util/menus';
+import type { PullMode } from '../types';
+import { pullPlan } from '../util/pull';
 import { forcePushWarning } from '../util/push';
 import { defaultRemote } from '../util/watchDiff';
 import { actionFor, defaultUpstream, isNotMerged, remoteOfUpstream, type MenuKind } from '../util/actionTable';
@@ -57,6 +59,49 @@ export async function restoreStash(path: string, stash: { index: number; oid: st
     title: `${label}: conflicts`,
     detail: `Resolve the conflicted files in Working changes.${pop ? ' The stash was kept.' : ''}`,
   });
+}
+
+/**
+ * Pull the checked-out branch. Without a usable upstream there is nothing git can pull,
+ * so explain why and offer the fix as a button: track the remote's same-named branch, or publish.
+ */
+export async function pullHead(path: string, mode: PullMode, publish: (branch: string) => unknown) {
+  const b = repo.refs.local.find((x) => x.isHead);
+  const plan = pullPlan(b, repo.refs.remote.map((r) => r.fullName), repo.refs.remotes);
+  const name = b?.name ?? '';
+  switch (plan.kind) {
+    case 'pull':
+      await runOp('Pull', () => api.pull(path, mode));
+      return;
+    case 'track': {
+      const upstream = plan.upstream;
+      toasts.push({
+        kind: 'info',
+        title: `${name} has no upstream`,
+        detail: `${upstream} exists on the remote. Track it, then pull.`,
+        action: {
+          label: 'Track and pull',
+          run: () => runOp('Pull', async () => {
+            await api.setUpstream(path, name, upstream);
+            return api.pull(path, mode);
+          }),
+        },
+      });
+      return;
+    }
+    case 'publish':
+      toasts.push({
+        kind: 'info',
+        title: plan.gone ? `${b?.upstream} was deleted on the remote` : `${name} isn't on ${plan.remote} yet`,
+        detail: plan.gone
+          ? `There's nothing to pull. Push to publish ${name} again.`
+          : `There's nothing to pull. Push to publish it; ${plan.remote}/${name} becomes its upstream.`,
+        action: { label: 'Push', run: () => publish(name) },
+      });
+      return;
+    case 'noRemote':
+      toasts.push({ kind: 'error', title: 'Nothing to pull', detail: 'This repository has no remote.' });
+  }
 }
 
 async function deleteBranch(c: ActionContext) {
@@ -181,7 +226,8 @@ export async function performMenuAction(id: string, ctx: ActionContext): Promise
   };
   switch (key) {
     case 'pull':
-      await runOp<unknown>('Pull', () => (ctx.isHeadBranch ? api.pull(path, 'default') : api.pullBranch(path, name)));
+      if (ctx.isHeadBranch) await pullHead(path, 'default', () => push(ctx));
+      else await runOp('Pull', () => api.pullBranch(path, name));
       return;
     case 'push': return push(ctx);
     case 'setUpstream': return setUpstream(ctx);
