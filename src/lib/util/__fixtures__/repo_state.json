@@ -1,0 +1,55 @@
+{
+  "head": {
+    "branch": "main",
+    "oid": "0000000000000000000000000000000000000000"
+  },
+  "operation": {
+    "kind": "merge",
+    "step": null,
+    "total": null,
+    "oursLabel": "main",
+    "theirsLabel": "feat"
+  },
+  "files": [
+    {
+      "path": "both.txt",
+      "origPath": null,
+      "index": "M",
+      "worktree": "M",
+      "conflicted": false,
+      "untracked": false
+    },
+    {
+      "path": "conflicted.txt",
+      "origPath": null,
+      "index": "U",
+      "worktree": "U",
+      "conflicted": true,
+      "untracked": false
+    },
+    {
+      "path": "staged-only.txt",
+      "origPath": null,
+      "index": "A",
+      "worktree": ".",
+      "conflicted": false,
+      "untracked": false
+    },
+    {
+      "path": "untracked.txt",
+      "origPath": null,
+      "index": ".",
+      "worktree": "?",
+      "conflicted": false,
+      "untracked": true
+    },
+    {
+      "path": "worktree-only.txt",
+      "origPath": null,
+      "index": ".",
+      "worktree": "M",
+      "conflicted": false,
+      "untracked": false
+    }
+  ]
+}

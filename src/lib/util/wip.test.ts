@@ -7,18 +7,18 @@ const s = (path: string, index: string, worktree: string, extra: Partial<FileSta
 });
 
 it('maps the index side', () => {
-  expect(toWipFile(s('a', 'A', ' '), 'index').change).toBe('added');
+  expect(toWipFile(s('a', 'A', '.'), 'index').change).toBe('added');
   expect(toWipFile(s('a', 'M', 'M'), 'index').change).toBe('modified');
-  expect(toWipFile(s('a', 'D', ' '), 'index').change).toBe('deleted');
-  expect(toWipFile(s('b', 'R', ' ', { origPath: 'a' }), 'index')).toEqual({ path: 'b', origPath: 'a', change: 'renamed' });
-  expect(toWipFile(s('a', 'C', ' '), 'index').change).toBe('copied');
-  expect(toWipFile(s('a', 'T', ' '), 'index').change).toBe('typeChange');
+  expect(toWipFile(s('a', 'D', '.'), 'index').change).toBe('deleted');
+  expect(toWipFile(s('b', 'R', '.', { origPath: 'a' }), 'index')).toEqual({ path: 'b', origPath: 'a', change: 'renamed' });
+  expect(toWipFile(s('a', 'C', '.'), 'index').change).toBe('copied');
+  expect(toWipFile(s('a', 'T', '.'), 'index').change).toBe('typeChange');
 });
 
 it('maps the worktree side, untracked and conflicts', () => {
   expect(toWipFile(s('a', 'M', 'M'), 'worktree').change).toBe('modified');
-  expect(toWipFile(s('a', ' ', 'D'), 'worktree').change).toBe('deleted');
-  expect(toWipFile(s('n', '?', '?', { untracked: true }), 'worktree').change).toBe('added');
+  expect(toWipFile(s('a', '.', 'D'), 'worktree').change).toBe('deleted');
+  expect(toWipFile(s('n', '.', '?', { untracked: true }), 'worktree').change).toBe('added');
   const c = toWipFile(s('c', 'U', 'U', { conflicted: true }), 'worktree');
   expect(c.conflict).toBe(true);
   expect(c.change).toBe('modified');
