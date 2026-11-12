@@ -313,7 +313,7 @@
     gap: 6px;
     height: 28px;
     padding: 0 8px;
-    border-radius: var(--radius);
+    border-radius: 0;
     cursor: default;
   }
   .row.indent {

@@ -28,10 +28,11 @@
   --fs-lg: 16px;
 
   /* Corners. */
+  /* Corners are near-sharp throughout; the steps are kept so they can diverge again. */
   --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius: 6px;
-  --radius-lg: 8px;
+  --radius-sm: 2px;
+  --radius: 2px;
+  --radius-lg: 2px;
 
   /* Interaction states, shared by every list, row and control. */
   --hover: rgb(255 255 255 / 0.05);
