@@ -2,6 +2,8 @@
   import { listen } from '@tauri-apps/api/event';
   import { onMount, untrack } from 'svelte';
   import * as api from './lib/api';
+  import CommitDetails from './lib/components/details/CommitDetails.svelte';
+  import DiffView from './lib/components/diff/DiffView.svelte';
   import GraphView from './lib/components/graph/GraphView.svelte';
   import Columns from './lib/components/layout/Columns.svelte';
   import ContextMenu from './lib/components/layout/ContextMenu.svelte';
@@ -87,7 +89,10 @@
     }
     e.preventDefault();
     if (action === 'toggleRepos') session.reposCollapsed = !session.reposCollapsed;
-    else if (action === 'search') ui.searchOpen = true;
+    else if (action === 'search') {
+      repo.showGraph();
+      ui.searchOpen = true;
+    }
     else if (action === 'settings') ui.settingsOpen = true;
     else if (action === 'openRepo') openRepoDialog();
     else if (action === 'closeRepo') {
@@ -111,13 +116,25 @@
     {/snippet}
     {#snippet centre()}
       {#if repo.path}
-        <GraphView />
+        <!-- GraphView stays mounted under the diff so its scroll position and page cache survive. -->
+        <div class="stack">
+          <div class="layer" class:covered={repo.centre.kind === 'diff'} inert={repo.centre.kind === 'diff'}>
+            <GraphView />
+          </div>
+          {#if repo.centre.kind === 'diff'}
+            <div class="layer"><DiffView /></div>
+          {/if}
+        </div>
       {:else}
         <div class="ph">Open a repository with ⌘O</div>
       {/if}
     {/snippet}
     {#snippet details()}
-      <div class="ph">Details</div>
+      {#if repo.selection?.kind === 'commit'}
+        <CommitDetails oid={repo.selection.oid} />
+      {:else}
+        <div class="ph">Select a commit to see its details</div>
+      {/if}
     {/snippet}
   </Columns>
 </main>
@@ -128,6 +145,18 @@
 <style>
   main {
     height: 100%;
+  }
+  .stack {
+    position: relative;
+    height: 100%;
+  }
+  .layer {
+    position: absolute;
+    inset: 0;
+  }
+  .layer.covered {
+    visibility: hidden;
+    pointer-events: none;
   }
   .ph {
     padding: 10px 12px;

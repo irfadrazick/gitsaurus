@@ -1,0 +1,72 @@
+.diff {
+  min-width: 100%;
+  width: max-content;
+  font: 12px/19px var(--mono);
+  tab-size: 4;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.diff .line {
+  display: flex;
+  min-height: 19px;
+}
+.diff .gutter {
+  flex: none;
+  width: 48px;
+  padding-right: 8px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--muted);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.diff .mark {
+  flex: none;
+  width: 16px;
+  text-align: center;
+  color: var(--muted);
+  user-select: none;
+  -webkit-user-select: none;
+}
+.diff .code {
+  flex: 1;
+  white-space: pre;
+  padding-right: 16px;
+}
+.diff .nonl {
+  color: var(--muted);
+  font-style: italic;
+}
+.diff .line.add,
+.diff .half.add {
+  background: color-mix(in srgb, var(--add) 15%, transparent);
+}
+.diff .line.del,
+.diff .half.del {
+  background: color-mix(in srgb, var(--del) 15%, transparent);
+}
+.diff .line.add .mark {
+  color: var(--add);
+}
+.diff .line.del .mark {
+  color: var(--del);
+}
+.diff .hunk-head {
+  min-height: 22px;
+  padding: 1px 12px 1px 64px;
+  white-space: pre;
+  line-height: 20px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--text) 7%, var(--bg));
+}
+.diff .half {
+  display: flex;
+  flex: 1 0 calc(var(--cols) + 64px);
+  min-width: 0;
+}
+.diff .half.empty {
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+}
+.diff .half + .half {
+  border-left: 1px solid var(--line);
+}
