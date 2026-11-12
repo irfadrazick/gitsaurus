@@ -40,7 +40,11 @@
     })
       .then((u) => (unlisten = u))
       .catch(() => {});
-    const onFocus = () => health.checkAll([...session.openRepos]);
+    // Catch changes the watcher missed (e.g. made while the app was in the background).
+    const onFocus = () => {
+      health.checkAll([...session.openRepos]);
+      if (repo.path) repo.refresh(['Git', 'Worktree']);
+    };
     window.addEventListener('focus', onFocus);
     return () => {
       unlisten?.();
