@@ -11,6 +11,9 @@
   import Toasts from './lib/components/layout/Toasts.svelte';
   import RefsColumn from './lib/components/refs/RefsColumn.svelte';
   import RepoColumn from './lib/components/repos/RepoColumn.svelte';
+  import ConflictBanner from './lib/components/wip/ConflictBanner.svelte';
+  import ConflictPanel from './lib/components/wip/ConflictPanel.svelte';
+  import WorkingChanges from './lib/components/wip/WorkingChanges.svelte';
   import { repo } from './lib/state/repo.svelte';
   import { health } from './lib/state/repoHealth.svelte';
   import { openRepoDialog } from './lib/state/repos';
@@ -118,20 +121,27 @@
     {#snippet centre()}
       {#if repo.path}
         <!-- GraphView stays mounted under the diff so its scroll position and page cache survive. -->
-        <div class="stack">
-          <div class="layer" class:covered={repo.centre.kind === 'diff'} inert={repo.centre.kind === 'diff'}>
-            <GraphView />
+        <div class="centre">
+          <ConflictBanner />
+          <div class="stack">
+            <div class="layer" class:covered={repo.centre.kind === 'diff'} inert={repo.centre.kind === 'diff'}>
+              <GraphView />
+            </div>
+            {#if repo.centre.kind === 'diff'}
+              <div class="layer"><DiffView /></div>
+            {/if}
           </div>
-          {#if repo.centre.kind === 'diff'}
-            <div class="layer"><DiffView /></div>
-          {/if}
         </div>
       {:else}
         <div class="ph">Open a repository with ⌘O</div>
       {/if}
     {/snippet}
     {#snippet details()}
-      {#if repo.selection?.kind === 'commit'}
+      {#if repo.path && repo.state.operation}
+        <ConflictPanel />
+      {:else if repo.path && repo.selection?.kind === 'wip'}
+        <WorkingChanges />
+      {:else if repo.selection?.kind === 'commit'}
         <CommitDetails oid={repo.selection.oid} />
       {:else}
         <div class="ph">Select a commit to see its details</div>
@@ -147,9 +157,15 @@
   main {
     height: 100%;
   }
+  .centre {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
   .stack {
     position: relative;
-    height: 100%;
+    flex: 1;
+    min-height: 0;
   }
   .layer {
     position: absolute;

@@ -4,19 +4,26 @@
   import { session } from '../../state/session.svelte';
   import type { Change, ChangedFile, TreeNode } from '../../types';
   import { buildTree } from '../../util/tree';
+  import type { WipFile } from '../../util/wip';
 
   let {
     files,
     onOpen,
     selected = null,
     actions,
+    onContext,
+    bare = false,
   }: {
-    files: ChangedFile[];
+    files: WipFile[];
     onOpen: (file: ChangedFile) => void;
     /** Path of the file to highlight. */
     selected?: string | null;
     /** Rendered at the right end of every file row (stage/unstage buttons). */
     actions?: Snippet<[ChangedFile]>;
+    /** Right-click on a file row. */
+    onContext?: (file: ChangedFile, e: MouseEvent) => void;
+    /** Embedded in a scrolling parent: no count/layout bar, no own scrolling. */
+    bare?: boolean;
   } = $props();
 
   const tree = $derived(buildTree(files));
@@ -35,10 +42,20 @@
   }
 </script>
 
-{#snippet row(file: ChangedFile, depth: number, name: string | null)}
-  <div class="row" class:sel={selected === file.path} style:padding-left="{8 + depth * 14}px">
+{#snippet row(file: WipFile, depth: number, name: string | null)}
+  <div
+    class="row"
+    class:sel={selected === file.path}
+    style:padding-left="{8 + depth * 14}px"
+    role="presentation"
+    oncontextmenu={onContext ? (e) => (e.preventDefault(), onContext(file, e)) : undefined}
+  >
     <button class="open" type="button" title={file.origPath ? `${file.origPath} → ${file.path}` : file.path} onclick={() => onOpen(file)}>
-      <span class="badge {file.change}" title={LABEL[file.change]}>{LETTER[file.change]}</span>
+      {#if file.conflict}
+        <span class="badge conflict" title="Conflicted">U</span>
+      {:else}
+        <span class="badge {file.change}" title={LABEL[file.change]}>{LETTER[file.change]}</span>
+      {/if}
       {#if name !== null}
         <span class="base">{name}</span>
       {:else}
@@ -63,14 +80,14 @@
   {/each}
 {/snippet}
 
-<div class="filelist">
-  <div class="bar">
+<div class="filelist" class:bare>
+  {#if !bare}<div class="bar">
     <span class="count muted small">{files.length} {files.length === 1 ? 'file' : 'files'}</span>
     <div class="seg" role="group" aria-label="File list layout">
       <button type="button" class:on={session.fileListMode === 'path'} aria-pressed={session.fileListMode === 'path'} onclick={() => (session.fileListMode = 'path')}>Path</button>
       <button type="button" class:on={session.fileListMode === 'tree'} aria-pressed={session.fileListMode === 'tree'} onclick={() => (session.fileListMode = 'tree')}>Tree</button>
     </div>
-  </div>
+  </div>{/if}
   <div class="items">
     {#if session.fileListMode === 'tree'}
       {@render nodes(tree, 0)}
@@ -88,6 +105,13 @@
     flex-direction: column;
     min-height: 0;
     height: 100%;
+  }
+  .filelist.bare {
+    height: auto;
+  }
+  .bare .items {
+    overflow: visible;
+    padding: 0;
   }
   .bar {
     display: flex;
@@ -129,7 +153,11 @@
     display: flex;
     align-items: center;
     gap: 4px;
+    min-height: 26px;
     padding-right: 6px;
+  }
+  .row:not(:hover):not(:focus-within) .actions {
+    visibility: hidden;
   }
   .row:hover,
   .row.sel {
@@ -178,6 +206,10 @@
     font: 700 10px/16px var(--mono);
     color: #11151b;
     background: var(--lane-5);
+  }
+  .badge.conflict {
+    background: var(--del);
+    color: #fff;
   }
   .badge.added {
     background: var(--add);
