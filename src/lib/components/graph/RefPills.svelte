@@ -59,7 +59,7 @@
     background: color-mix(in srgb, var(--c) 22%, var(--bg));
     color: #e6edf3;
     font-size: var(--fs-xs);
-    font-weight: 600;
+    font-weight: 400;
     line-height: 1;
     white-space: nowrap;
   }
