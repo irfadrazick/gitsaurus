@@ -36,7 +36,7 @@
       <span>Load avatars from Gravatar/GitHub</span>
     </label>
     <label class="field">
-      <span>Editor command (empty = system default)</span>
+      <span>Editor command (empty = default text editor)</span>
       <input
         type="text"
         placeholder="code -w"
