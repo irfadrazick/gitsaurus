@@ -17,11 +17,8 @@
   import SearchBar from './SearchBar.svelte';
 
   // --- layout ---------------------------------------------------------------------------------
-  const REFS_MIN = 90;
-  const REFS_MAX = 420;
   const GRAPH_MIN = GRAPH_COL_MIN;
   const GRAPH_MAX = 900;
-  let refsW = $state(180);
   /** User-resizable cap; the graph column is sized to max lanes up to this. */
   let graphCap = $state(264);
   const graphW = $derived(graphColumnWidth(repo.summary.maxLanes, graphCap));
@@ -268,16 +265,15 @@
   }
 
   // --- column resize --------------------------------------------------------------------------
-  function startDrag(e: PointerEvent, which: 'refs' | 'graph') {
+  function startDrag(e: PointerEvent) {
     e.preventDefault();
     const startX = e.clientX;
-    const startW = which === 'refs' ? refsW : graphW;
+    const startW = graphW;
     const target = e.currentTarget as HTMLElement;
     target.setPointerCapture(e.pointerId);
     const onMove = (ev: PointerEvent) => {
       const w = Math.round(startW + ev.clientX - startX);
-      if (which === 'refs') refsW = Math.min(REFS_MAX, Math.max(REFS_MIN, w));
-      else graphCap = Math.min(GRAPH_MAX, Math.max(GRAPH_MIN, w));
+      graphCap = Math.min(GRAPH_MAX, Math.max(GRAPH_MIN, w));
     };
     const up = () => {
       target.removeEventListener('pointermove', onMove);
@@ -290,16 +286,12 @@
   }
 </script>
 
-<div class="graphview" style:--refs-w="{refsW}px" style:--graph-w="{graphW}px">
+<div class="graphview" style:--graph-w="{graphW}px">
   <div class="header">
-    <div class="h">Branch / Tag</div>
-    <div class="h">
-      Graph
-      <span class="grip" role="separator" aria-orientation="vertical" aria-label="Resize branch column" onpointerdown={(e) => startDrag(e, 'refs')}></span>
-    </div>
+    <div class="h">Graph</div>
     <div class="h">
       Commit message
-      <span class="grip" role="separator" aria-orientation="vertical" aria-label="Resize graph column" onpointerdown={(e) => startDrag(e, 'graph')}></span>
+      <span class="grip" role="separator" aria-orientation="vertical" aria-label="Resize graph column" onpointerdown={startDrag}></span>
     </div>
   </div>
 
@@ -365,7 +357,7 @@
   .header {
     display: grid;
     flex: none;
-    grid-template-columns: var(--refs-w) var(--graph-w) minmax(0, 1fr);
+    grid-template-columns: var(--graph-w) minmax(0, 1fr);
     height: 28px;
     border-bottom: 1px solid var(--line);
     background: var(--panel);

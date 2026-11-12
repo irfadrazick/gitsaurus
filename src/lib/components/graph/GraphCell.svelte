@@ -10,7 +10,6 @@
   let {
     commit,
     selected = false,
-    hasRefs = false,
     index = 0,
     headIndex = null,
     hasWip = false,
@@ -20,8 +19,6 @@
     /** The row to draw; omitted for the WIP row. */
     commit?: GraphCommit;
     selected?: boolean;
-    /** Draw the 1 px connector from the left edge (the BRANCH/TAG pill) to the node. */
-    hasRefs?: boolean;
     /** Graph index of this row and of HEAD: identify the seed segments (Ruling R8). */
     index?: number;
     headIndex?: number | null;
@@ -74,9 +71,6 @@
         <path d={segmentPath('out', l.lane, lane)} stroke={laneColor(l.color)} />
       {/each}
     </g>
-    {#if hasRefs}
-      <line x1="0" y1={cy + 0.5} x2={nx} y2={cy + 0.5} stroke={stroke} stroke-width="1" />
-    {/if}
     {#if selected}
       <circle cx={nx} cy={cy} r={(merge ? MERGE_R : NODE_R) + 3.5} fill="none" stroke={stroke} stroke-opacity="0.55" stroke-width="2" />
     {/if}

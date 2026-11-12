@@ -1,6 +1,7 @@
 <script lang="ts">
   import { settings } from '../../state/settings.svelte';
   import { ui } from '../../state/ui.svelte';
+  import { SHORTCUTS } from '../../util/shortcuts';
 
   let minutes = $state(String(settings.fetchIntervalMin));
 
@@ -47,6 +48,15 @@
       <input id="editor-cmd" type="text" placeholder="code -w" spellcheck="false" autocomplete="off" bind:value={settings.editorCommand} />
       <p class="hint">Used by "Open in editor". Leave empty to use your default text editor.</p>
     </div>
+    <div class="field">
+      <h3>Keyboard shortcuts</h3>
+      <dl class="keys">
+        {#each SHORTCUTS as s (s.keys)}
+          <dt><kbd>{s.keys}</kbd></dt>
+          <dd>{s.label}</dd>
+        {/each}
+      </dl>
+    </div>
     <div class="actions"><button onclick={close}>Done</button></div>
   </div>
 </div>
@@ -59,6 +69,42 @@
     display: flex;
     flex-direction: column;
     gap: 16px;
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
+  }
+  h3 {
+    margin: 0;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .keys {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 5px 12px;
+    margin: 2px 0 0;
+    font-size: var(--fs-sm);
+  }
+  .keys dt {
+    justify-self: end;
+  }
+  .keys dd {
+    margin: 0;
+    color: color-mix(in srgb, var(--text) 85%, var(--muted));
+  }
+  kbd {
+    display: inline-block;
+    min-width: 22px;
+    padding: 0 6px;
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--fs-xs);
+    line-height: 18px;
+    text-align: center;
+    white-space: nowrap;
   }
   h2 {
     margin-bottom: 0;
