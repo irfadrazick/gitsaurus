@@ -1,5 +1,6 @@
 use crate::git::refs::split_remote;
-use crate::git::{Git, GitError, GitResult, RefKind, ResetMode};
+use crate::git::status::repo_state;
+use crate::git::{Git, GitError, GitResult, OpOutcome, RefKind, ResetMode};
 
 fn failed(message: impl Into<String>) -> GitError {
     GitError::Failed {
@@ -176,12 +177,29 @@ fn stash_op(git: &Git, op: &str, index: u32) -> GitResult<()> {
         .map(|_| ())
 }
 
-pub fn stash_apply(git: &Git, index: u32) -> GitResult<()> {
-    stash_op(git, "apply", index)
+fn has_conflicts(git: &Git) -> bool {
+    repo_state(git).is_ok_and(|s| s.files.iter().any(|f| f.conflicted))
 }
 
-pub fn stash_pop(git: &Git, index: u32) -> GitResult<()> {
-    stash_op(git, "pop", index)
+/// Apply or pop a stash. No operation is left in progress when a stash conflicts,
+/// so conflicts are detected from status: any conflicted file afterwards (that was
+/// not already there) means `Conflicts`, whether git exited non-zero or not.
+/// A conflicting pop keeps the stash entry.
+fn stash_restore(git: &Git, op: &str, index: u32) -> GitResult<OpOutcome> {
+    let before = has_conflicts(git);
+    let res = stash_op(git, op, index);
+    if !before && has_conflicts(git) {
+        return Ok(OpOutcome::Conflicts);
+    }
+    res.map(|_| OpOutcome::Done)
+}
+
+pub fn stash_apply(git: &Git, index: u32) -> GitResult<OpOutcome> {
+    stash_restore(git, "apply", index)
+}
+
+pub fn stash_pop(git: &Git, index: u32) -> GitResult<OpOutcome> {
+    stash_restore(git, "pop", index)
 }
 
 pub fn stash_drop(git: &Git, index: u32) -> GitResult<()> {

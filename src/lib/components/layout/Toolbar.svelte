@@ -1,5 +1,6 @@
 <script lang="ts">
   import * as api from '../../api';
+  import { restoreStash } from '../../state/actions';
   import { openMenu } from '../../state/contextMenu.svelte';
   import { confirm, prompt } from '../../state/modal.svelte';
   import { busy, runOp } from '../../state/ops';
@@ -150,8 +151,8 @@
         {/if}
         <span>Stash</span>
       </button>
-      <button class="tb" onclick={() => runOp('Pop', () => api.stashPop(path, 0))} disabled={!hasStash} title="Pop latest stash">
-        {#if busy.get('Pop')}{@render spinner()}{:else}
+      <button class="tb" onclick={() => restoreStash(path, 0, true)} disabled={!hasStash} title="Pop latest stash">
+        {#if busy.get('Pop stash')}{@render spinner()}{:else}
           <svg viewBox="0 0 16 16"><path d="M2.5 9v4h11V9M8 10V2M4.5 5.5 8 2l3.5 3.5" /></svg>
         {/if}
         <span>Pop</span>

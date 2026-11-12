@@ -50,8 +50,8 @@ export const deleteTag = (repo: string, name: string, remote?: string) => invoke
 export const pushTag = (repo: string, tag: string, remote?: string) => invoke<void>('push_tag', { repo, tag, remote });
 export const reset = (repo: string, oid: string, mode: ResetMode) => invoke<void>('reset', { repo, oid, mode });
 export const stashPush = (repo: string, message?: string) => invoke<void>('stash_push', { repo, message });
-export const stashApply = (repo: string, index: number) => invoke<void>('stash_apply', { repo, index });
-export const stashPop = (repo: string, index: number) => invoke<void>('stash_pop', { repo, index });
+export const stashApply = (repo: string, index: number) => invoke<OpOutcome>('stash_apply', { repo, index });
+export const stashPop = (repo: string, index: number) => invoke<OpOutcome>('stash_pop', { repo, index });
 export const stashDrop = (repo: string, index: number) => invoke<void>('stash_drop', { repo, index });
 
 // integrate

@@ -6,11 +6,14 @@
   import { repo } from '../../state/repo.svelte';
   import type { ChangedFile, DiffSource } from '../../types';
   import { splitStatus } from '../../util/status';
-  import { toWipFile } from '../../util/wip';
+  import { conflictSides, toWipFile } from '../../util/wip';
   import FileList from '../details/FileList.svelte';
   import CommitBox from './CommitBox.svelte';
+  import ConflictFile from './ConflictFile.svelte';
 
   const split = $derived(splitStatus(repo.state.files));
+  // Conflicts outside an operation (e.g. a stash apply/pop); conflicted files never get a Discard action.
+  const sides = $derived(conflictSides(repo.state.operation));
   const unstaged = $derived(split.unstaged.map((f) => toWipFile(f, 'worktree')));
   const staged = $derived(split.staged.map((f) => toWipFile(f, 'index')));
   const untracked = $derived(new Set(split.unstaged.filter((f) => f.untracked).map((f) => f.path)));
@@ -48,6 +51,14 @@
 
 <div class="wip">
   <div class="scroll">
+    {#if split.conflicted.length}
+      <section>
+        <header><h3>Conflicted files ({split.conflicted.length})</h3></header>
+        {#each split.conflicted as f (f.path)}
+          <ConflictFile file={f} {...sides} />
+        {/each}
+      </section>
+    {/if}
     <section>
       <header>
         <h3>Unstaged files ({unstaged.length})</h3>

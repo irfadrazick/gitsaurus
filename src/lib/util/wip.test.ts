@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { FileStatus } from '../types';
-import { bannerText, canCommit, commitMessageParts, toWipFile } from './wip';
+import { bannerText, canCommit, commitMessageParts, conflictSides, toWipFile } from './wip';
 
 const s = (path: string, index: string, worktree: string, extra: Partial<FileStatus> = {}): FileStatus => ({
   path, origPath: null, index, worktree, conflicted: false, untracked: false, ...extra,
@@ -50,4 +50,11 @@ it('commitMessageParts', () => {
   expect(r.summary).toBe('sum');
   expect(r.description).toBe('    indented\n- item');
   expect(commitMessageParts('s', '  \n\t\n').description).toBe('');
+});
+
+it('conflict side names', () => {
+  const op = { kind: 'merge' as const, step: null, total: null, oursLabel: 'main', theirsLabel: 'feat' };
+  expect(conflictSides(op)).toEqual({ ours: '"main"', theirs: '"feat"' });
+  // No operation: the conflict came from applying a stash.
+  expect(conflictSides(null)).toEqual({ ours: 'mine (current)', theirs: 'stash' });
 });

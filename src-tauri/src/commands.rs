@@ -381,7 +381,11 @@ pub async fn stash_push(
 }
 
 #[tauri::command]
-pub async fn stash_apply(state: State<'_, AppState>, repo: String, index: u32) -> GitResult<()> {
+pub async fn stash_apply(
+    state: State<'_, AppState>,
+    repo: String,
+    index: u32,
+) -> GitResult<OpOutcome> {
     write(state.inner(), repo, move |git| {
         branch::stash_apply(&git, index)
     })
@@ -389,7 +393,11 @@ pub async fn stash_apply(state: State<'_, AppState>, repo: String, index: u32) -
 }
 
 #[tauri::command]
-pub async fn stash_pop(state: State<'_, AppState>, repo: String, index: u32) -> GitResult<()> {
+pub async fn stash_pop(
+    state: State<'_, AppState>,
+    repo: String,
+    index: u32,
+) -> GitResult<OpOutcome> {
     write(state.inner(), repo, move |git| {
         branch::stash_pop(&git, index)
     })

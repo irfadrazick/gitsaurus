@@ -21,6 +21,16 @@ const NAME: Record<Operation['kind'], string> = {
 
 export const opName = (kind: Operation['kind']) => NAME[kind];
 
+/**
+ * Side names for the conflict resolve buttons ("Use <name>"). With no operation
+ * in progress the conflict came from applying a stash: ours is the current
+ * working tree, theirs the stash.
+ */
+export function conflictSides(op: Operation | null): { ours: string; theirs: string } {
+  if (!op) return { ours: 'mine (current)', theirs: 'stash' };
+  return { ours: `"${op.oursLabel}"`, theirs: `"${op.theirsLabel}"` };
+}
+
 /** Text of the conflict banner. */
 export function bannerText(op: Operation, conflicted: number): string {
   const name = NAME[op.kind];

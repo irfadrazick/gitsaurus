@@ -1,7 +1,7 @@
 mod common;
 use common::TestRepo;
 use gitsaurus_lib::git::ops::branch::*;
-use gitsaurus_lib::git::{Git, GitError, RefKind, ResetMode, list_refs, repo_state};
+use gitsaurus_lib::git::{Git, GitError, OpOutcome, RefKind, ResetMode, list_refs, repo_state};
 
 fn setup() -> (TestRepo, TestRepo) {
     let bare = TestRepo::bare();
@@ -172,11 +172,11 @@ fn stash_push_pop_apply_drop() {
     stash_push(&g, Some("wip")).unwrap();
     assert!(repo_state(&g).unwrap().files.is_empty());
     assert!(a.git(&["stash", "list"]).contains("wip"));
-    stash_apply(&g, 0).unwrap();
+    assert_eq!(stash_apply(&g, 0).unwrap(), OpOutcome::Done);
     assert_eq!(repo_state(&g).unwrap().files.len(), 2);
     a.git(&["checkout", "--", "f.txt"]);
     std::fs::remove_file(a.path().join("new.txt")).unwrap();
-    stash_pop(&g, 0).unwrap();
+    assert_eq!(stash_pop(&g, 0).unwrap(), OpOutcome::Done);
     assert_eq!(repo_state(&g).unwrap().files.len(), 2);
     assert!(a.git(&["stash", "list"]).is_empty());
     stash_push(&g, None).unwrap();
@@ -185,4 +185,41 @@ fn stash_push_pop_apply_drop() {
     assert_eq!(a.git(&["stash", "list"]).lines().count(), 2);
     stash_drop(&g, 1).unwrap();
     assert_eq!(a.git(&["stash", "list"]).lines().count(), 1);
+}
+
+#[test]
+fn stash_pop_that_conflicts_returns_conflicts_and_keeps_the_stash() {
+    let (_b, a) = setup();
+    let g = Git::new(a.path());
+    a.write("f.txt", "stashed\n");
+    stash_push(&g, Some("wip")).unwrap();
+    a.write("f.txt", "committed\n");
+    a.commit_all("c2");
+    assert_eq!(stash_pop(&g, 0).unwrap(), OpOutcome::Conflicts);
+    let st = repo_state(&g).unwrap();
+    assert!(st.files.iter().any(|f| f.path == "f.txt" && f.conflicted));
+    assert!(st.operation.is_none());
+    assert_eq!(a.git(&["stash", "list"]).lines().count(), 1);
+}
+
+#[test]
+fn stash_apply_that_conflicts_returns_conflicts() {
+    let (_b, a) = setup();
+    let g = Git::new(a.path());
+    a.write("f.txt", "stashed\n");
+    stash_push(&g, None).unwrap();
+    a.write("f.txt", "committed\n");
+    a.commit_all("c2");
+    assert_eq!(stash_apply(&g, 0).unwrap(), OpOutcome::Conflicts);
+}
+
+#[test]
+fn stash_apply_refused_by_local_changes_is_an_error() {
+    let (_b, a) = setup();
+    let g = Git::new(a.path());
+    a.write("f.txt", "stashed\n");
+    stash_push(&g, None).unwrap();
+    a.write("f.txt", "local edit\n");
+    assert!(matches!(stash_apply(&g, 0), Err(GitError::Failed { .. })));
+    assert!(repo_state(&g).unwrap().files.iter().all(|f| !f.conflicted));
 }
