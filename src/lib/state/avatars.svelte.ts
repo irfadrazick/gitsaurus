@@ -1,5 +1,5 @@
 import { SvelteMap, SvelteSet } from 'svelte/reactivity';
-import { avatarUrl } from '../util/avatar';
+import { avatarsAllowed, avatarUrl } from '../util/avatar';
 import { settings } from './settings.svelte';
 
 // Module-level avatar cache. URLs are resolved once per email (avatarUrl hashes with SHA-256, async);
@@ -12,11 +12,11 @@ const pending = new Set<string>();
 const key = (email: string) => email.trim().toLowerCase();
 
 /**
- * Avatar image URL for `email`, or null (avatars off, unresolved yet, or failed before).
+ * Avatar image URL for `email`, or null (settings not loaded yet, avatars off, unresolved yet, or failed before).
  * Reactive: callers re-render once the URL resolves or a failure is recorded.
  */
 export function avatarFor(email: string): string | null {
-  if (!settings.avatarsEnabled) return null;
+  if (!avatarsAllowed(settings)) return null;
   const k = key(email);
   if (!k || failed.has(k)) return null;
   const url = resolved.get(k);

@@ -22,3 +22,6 @@ export function initials(name: string): string {
   const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (first + last).toUpperCase();
 }
+
+/** Network avatar lookups wait for the saved settings, so "avatars off" never leaks a request at startup. */
+export const avatarsAllowed = (s: { loaded: boolean; avatarsEnabled: boolean }) => s.loaded && s.avatarsEnabled;
