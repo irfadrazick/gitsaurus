@@ -95,10 +95,17 @@ fn map_push_error(e: GitError) -> GitError {
 
 pub fn push(git: &Git, branch: &str, force: bool) -> GitResult<()> {
     safe_target(branch)?;
-    let lease = force.then_some("--force-with-lease");
+    // --force-if-includes: the lease alone is satisfied by any fetch (including the
+    // background one) that moved the remote-tracking ref; this also requires the
+    // remote tip to be in the local branch's reflog, i.e. actually seen locally.
+    let lease: &[&str] = if force {
+        &["--force-with-lease", "--force-if-includes"]
+    } else {
+        &[]
+    };
     let mut args: Vec<String> = vec!["push".into()];
     if let Some((remote, remote_ref)) = upstream_of(git, branch)? {
-        args.extend(lease.map(String::from));
+        args.extend(lease.iter().map(|s| s.to_string()));
         let short = remote_ref
             .strip_prefix("refs/heads/")
             .unwrap_or(&remote_ref);
@@ -116,7 +123,7 @@ pub fn push(git: &Git, branch: &str, force: bool) -> GitResult<()> {
             return Err(failed("Choose a remote: no upstream and no origin"));
         };
         args.push("-u".into());
-        args.extend(lease.map(String::from));
+        args.extend(lease.iter().map(|s| s.to_string()));
         args.push(remote);
         args.push(branch.to_string());
     }

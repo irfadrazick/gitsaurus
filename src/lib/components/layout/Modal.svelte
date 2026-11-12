@@ -138,7 +138,11 @@
   }
   .body {
     margin: 0 0 12px;
+    max-height: 50vh;
+    overflow-y: auto;
     color: var(--muted);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
     user-select: text;
   }
   .field {

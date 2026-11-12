@@ -153,18 +153,37 @@ fn push_without_remote_fails() {
 }
 
 #[test]
-fn push_rejected_maps_to_push_rejected_then_force_with_lease_succeeds() {
+fn push_rejected_maps_to_push_rejected_and_force_does_not_clobber_fetched_commits() {
     let (remote, a, b) = setup();
     a.write("a.txt", "a\n");
-    a.commit_all("a change");
+    let theirs = a.commit_all("a change");
     a.git(&["push", "origin", "main"]);
     b.write("b.txt", "b\n");
-    let oid = b.commit_all("b change");
+    b.commit_all("b change");
     let g = Git::new(b.path());
     let err = push(&g, "main", false).unwrap_err();
     assert!(matches!(err, GitError::PushRejected { .. }), "{err:?}");
-    // Fetch so the lease matches the remote tip, then force-with-lease wins.
+    // A (background) fetch moves origin/main, which alone would satisfy
+    // --force-with-lease; --force-if-includes still refuses, because b never
+    // integrated the fetched commit.
     fetch_all(&g).unwrap();
+    let err = push(&g, "main", true).unwrap_err();
+    assert!(matches!(err, GitError::PushRejected { .. }), "{err:?}");
+    assert_eq!(remote.git(&["rev-parse", "main"]).trim(), theirs);
+}
+
+#[test]
+fn force_push_rewrites_history_the_local_branch_has_seen() {
+    let (remote, _a, b) = setup();
+    b.write("b.txt", "b\n");
+    b.commit_all("b change");
+    b.git(&["push", "origin", "main"]);
+    b.write("b.txt", "b amended\n");
+    b.git(&["commit", "-a", "--amend", "-m", "b change (amended)"]);
+    let oid = b.git(&["rev-parse", "HEAD"]).trim().to_string();
+    let g = Git::new(b.path());
+    let err = push(&g, "main", false).unwrap_err();
+    assert!(matches!(err, GitError::PushRejected { .. }), "{err:?}");
     push(&g, "main", true).unwrap();
     assert_eq!(remote.git(&["rev-parse", "main"]).trim(), oid);
 }

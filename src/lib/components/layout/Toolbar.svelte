@@ -10,6 +10,7 @@
   import type { GitError, PullMode } from '../../types';
   import { fetchIntervalMs, shouldFetch } from '../../util/backgroundFetch';
   import type { MenuItem } from '../../util/menus';
+  import { forcePushBody } from '../../util/push';
 
   const path = $derived(repo.path);
   const name = $derived(path ? (path.split('/').filter(Boolean).pop() ?? path) : '');
@@ -67,7 +68,7 @@
       onError: (e) => {
         const err = e as Partial<GitError> & { stderr?: string };
         if (err?.kind !== 'pushRejected') return false;
-        void forcePush(p, b, err.stderr || err.message || 'The remote has commits you do not have locally.');
+        void forcePush(p, b, forcePushBody(b, err.stderr || err.message || ''));
         return true;
       },
     });

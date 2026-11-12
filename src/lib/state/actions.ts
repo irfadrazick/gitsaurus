@@ -1,6 +1,7 @@
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import * as api from '../api';
 import type { MenuContext } from '../util/menus';
+import { forcePushWarning } from '../util/push';
 import { defaultRemote } from '../util/watchDiff';
 import { actionFor, defaultUpstream, isNotMerged, remoteOfUpstream, type MenuKind } from '../util/actionTable';
 import { choose, confirm, prompt } from './modal.svelte';
@@ -101,7 +102,7 @@ async function push(c: ActionContext) {
     onPushRejected: async () => {
       const ok = await confirm({
         title: 'Push rejected',
-        body: `The remote has commits ${c.name} lacks. Force push (with lease) overwrites remote history.`,
+        body: forcePushWarning(c.name),
         danger: true,
         confirmLabel: 'Force push (with lease)',
       });
