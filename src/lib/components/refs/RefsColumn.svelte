@@ -122,7 +122,7 @@
       {/if}
 
       {#if !q || remoteCount}
-        {@render header('remote', 'Remote', remoteCount)}
+        {@render header('remote', 'Remote', remoteCount, 'cloud')}
         {#if open('remote')}
           {#each remoteGroups as g (g.remote)}
             <div class="remote-name">{g.remote}</div>
@@ -145,7 +145,7 @@
       {/if}
 
       {#if !q || tags.length}
-        {@render header('tags', 'Tags', tags.length)}
+        {@render header('tags', 'Tags', tags.length, 'tag')}
         {#if open('tags')}
           {#each tags as t (t.name)}
             <div
@@ -166,7 +166,7 @@
       {/if}
 
       {#if !q || stashes.length}
-        {@render header('stashes', 'Stashes', stashes.length)}
+        {@render header('stashes', 'Stashes', stashes.length, 'stash')}
         {#if open('stashes')}
           {#each stashes as s (s.index)}
             <div
@@ -186,7 +186,7 @@
       {/if}
 
       {#if !q || worktrees.length}
-        {@render header('worktrees', 'Worktrees', worktrees.length)}
+        {@render header('worktrees', 'Worktrees', worktrees.length, 'folder')}
         {#if open('worktrees')}
           {#each worktrees as w (w.path)}
             <div
