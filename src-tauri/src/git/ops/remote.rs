@@ -128,9 +128,7 @@ pub fn push(git: &Git, branch: &str, force: bool) -> GitResult<()> {
         args.push(branch.to_string());
     }
     let refs: Vec<&str> = args.iter().map(String::as_str).collect();
-    git.run_network(&refs)
-        .map(|_| ())
-        .map_err(map_push_error)
+    git.run_network(&refs).map(|_| ()).map_err(map_push_error)
 }
 
 pub fn set_upstream(git: &Git, local: &str, remote_branch: &str) -> GitResult<()> {

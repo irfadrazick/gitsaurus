@@ -12,8 +12,7 @@ use std::path::PathBuf;
 const PLACEHOLDER_OID: &str = "0000000000000000000000000000000000000000";
 
 fn fixture_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("../src/lib/util/__fixtures__/repo_state.json")
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../src/lib/util/__fixtures__/repo_state.json")
 }
 
 /// One staged-only, one worktree-only, one MM, one untracked and one conflicted file.
@@ -58,7 +57,8 @@ fn repo_state_fixture_matches_backend() {
     }
     let committed = std::fs::read_to_string(&path).unwrap_or_default();
     assert_eq!(
-        committed, json,
+        committed,
+        json,
         "{} is stale; regenerate with GITSAURUS_UPDATE_FIXTURES=1 cargo test --test contract",
         path.display()
     );
