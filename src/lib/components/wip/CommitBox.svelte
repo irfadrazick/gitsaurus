@@ -9,7 +9,7 @@
   import { busy, runOp } from '../../state/ops';
   import { repo } from '../../state/repo.svelte';
   import { toasts } from '../../state/toasts.svelte';
-  import { canCommit } from '../../util/wip';
+  import { canCommit, commitMessageParts } from '../../util/wip';
 
   let { staged }: { staged: number } = $props();
 
@@ -48,7 +48,8 @@
   async function commit() {
     if (!ready) return;
     const ok = await runOp('Commit', async () => {
-      await api.commit(path, summary.trim(), description.trim(), amend);
+      const m = commitMessageParts(summary, description);
+      await api.commit(path, m.summary, m.description, amend);
       return true as const;
     });
     if (!ok) return;

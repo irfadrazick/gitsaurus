@@ -36,3 +36,8 @@ export function bannerText(op: Operation, conflicted: number): string {
 
 export const canCommit = (summary: string, staged: number, amend: boolean) =>
   summary.trim() !== '' && (staged > 0 || amend);
+
+/** Summary fully trimmed; description loses leading blank lines (not indentation) and trailing whitespace. */
+export function commitMessageParts(summary: string, description: string) {
+  return { summary: summary.trim(), description: description.replace(/^(?:[ \t]*\n)+/, '').trimEnd() };
+}

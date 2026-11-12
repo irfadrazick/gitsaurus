@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import type { FileStatus } from '../types';
-import { bannerText, canCommit, toWipFile } from './wip';
+import { bannerText, canCommit, commitMessageParts, toWipFile } from './wip';
 
 const s = (path: string, index: string, worktree: string, extra: Partial<FileStatus> = {}): FileStatus => ({
   path, origPath: null, index, worktree, conflicted: false, untracked: false, ...extra,
@@ -43,4 +43,11 @@ it('canCommit', () => {
   expect(canCommit('x', 0, false)).toBe(false);
   expect(canCommit('x', 0, true)).toBe(true);
   expect(canCommit('', 0, true)).toBe(false);
+});
+
+it('commitMessageParts', () => {
+  const r = commitMessageParts('  sum  ', '\n  \n    indented\n- item  \n\n ');
+  expect(r.summary).toBe('sum');
+  expect(r.description).toBe('    indented\n- item');
+  expect(commitMessageParts('s', '  \n\t\n').description).toBe('');
 });
