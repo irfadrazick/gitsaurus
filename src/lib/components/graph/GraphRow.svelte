@@ -50,7 +50,6 @@
     aria-selected={selected}
     data-wip=""
   >
-    <div class="refs"></div>
     <div class="graph"><GraphCell wip wipLinked={wipLinked} selected={selected} /></div>
     <div class="msg">
       <span class="text"><span class="wiplabel">WIP</span><span class="body">{wipCount} changed {wipCount === 1 ? 'file' : 'files'}</span></span>
@@ -66,18 +65,17 @@
     aria-selected={selected}
     data-index={index}
   >
-    <div class="refs"><RefPills pills={pills} color={laneColor(color)} /></div>
     <div class="graph">
-      <GraphCell commit={commit} selected={selected} hasRefs={pills.length > 0} index={index} headIndex={headIndex} hasWip={hasWip} />
+      <GraphCell commit={commit} selected={selected} index={index} headIndex={headIndex} hasWip={hasWip} />
     </div>
     <div class="msg">
+      {#if pills.length}<RefPills pills={pills} color={laneColor(color)} />{/if}
       <span class="text"><span class="summary">{commit.summary}</span>{#if commit.bodyPreview}<span class="body">{commit.bodyPreview}</span>{/if}</span>
       {#if marker}<span class="marker">{marker}</span>{/if}
     </div>
   </div>
 {:else}
   <div class="row skeleton" role="option" aria-selected="false" aria-busy="true">
-    <div class="refs"></div>
     <div class="graph"><span class="dot"></span></div>
     <div class="msg"><span class="bar" style:width="{skel}%"></span></div>
   </div>
@@ -87,7 +85,7 @@
   /* Rows stay neutral: lane colour lives in the graph and the pills, so selection is the one strong fill. */
   .row {
     display: grid;
-    grid-template-columns: var(--refs-w) var(--graph-w) minmax(0, 1fr);
+    grid-template-columns: var(--graph-w) minmax(0, 1fr);
     height: 36px;
     cursor: default;
   }
@@ -97,17 +95,13 @@
   .row.selected {
     background: var(--sel);
   }
-  .refs {
-    min-width: 0;
-    overflow: hidden;
-  }
   .graph {
     overflow: hidden;
   }
   .msg {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     min-width: 0;
     padding: 0 12px 0 6px;
   }
