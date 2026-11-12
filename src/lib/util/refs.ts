@@ -33,3 +33,19 @@ export function groupPills(refs: RefLabel[]): Pill[] {
   }
   return pills;
 }
+
+/** Pills for a graph row: groupPills order, with the checked-out branch moved first. */
+export function rowPills(refs: RefLabel[]): Pill[] {
+  const pills = groupPills(refs);
+  const head = pills.findIndex((p) => p.isHead);
+  if (head > 0) pills.unshift(...pills.splice(head, 1));
+  return pills;
+}
+
+const pillKind = (p: Pill) =>
+  p.tag ? 'tag' : p.local && p.remote ? 'local + remote' : p.local ? 'local' : 'remote';
+
+/** Tooltip listing every pill of a row, one per line. */
+export function pillTitle(pills: Pill[]): string {
+  return pills.map((p) => `${p.isHead ? '✓ ' : ''}${p.name} (${pillKind(p)})`).join('\n');
+}

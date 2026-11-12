@@ -2,6 +2,7 @@
   import { listen } from '@tauri-apps/api/event';
   import { onMount, untrack } from 'svelte';
   import * as api from './lib/api';
+  import GraphView from './lib/components/graph/GraphView.svelte';
   import Columns from './lib/components/layout/Columns.svelte';
   import ContextMenu from './lib/components/layout/ContextMenu.svelte';
   import Modal from './lib/components/layout/Modal.svelte';
@@ -109,7 +110,11 @@
       <RefsColumn />
     {/snippet}
     {#snippet centre()}
-      <div class="ph">{repo.path ?? 'Open a repository with ⌘O'}</div>
+      {#if repo.path}
+        <GraphView />
+      {:else}
+        <div class="ph">Open a repository with ⌘O</div>
+      {/if}
     {/snippet}
     {#snippet details()}
       <div class="ph">Details</div>
