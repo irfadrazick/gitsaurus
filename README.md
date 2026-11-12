@@ -10,7 +10,7 @@ A minimal, fast git client for macOS. It shows your history as a lane graph and 
 - Working changes: stage, unstage, discard, commit (with amend)
 - Unified and split diffs with syntax highlighting
 - Merge, rebase, cherry-pick, revert and reset, with a conflict resolver
-- Toolbar: Pull (fetch, fast-forward, fast-forward only, rebase), Push, Branch, Stash, Pop, Terminal, Search
+- Toolbar: Pull (fetch, fast-forward, fast-forward only, rebase), Push, Branch, Stash, Pop, Search
 - Force push only ever uses `--force-with-lease`, and only after you confirm
 - Background fetch on an interval you choose
 - Dark theme, no telemetry, no accounts. Network use is limited to your git remotes and optional avatar lookups (can be turned off in Settings, Cmd+,)
