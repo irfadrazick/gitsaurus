@@ -1,12 +1,15 @@
 use super::error::{GitError, GitResult};
+use super::ops::branch::safe_target;
 use super::runner::Git;
 use super::types::{Change, ChangedFile, CommitDetails, Person};
 
 pub fn commit_details(git: &Git, oid: &str) -> GitResult<CommitDetails> {
+    safe_target(oid)?;
     let meta = git.run_read(&[
         "show",
         "-s",
         "--format=%H%x1f%P%x1f%an%x1f%ae%x1f%at%x1f%cn%x1f%ce%x1f%ct%x1f%s%x1f%b",
+        "--end-of-options",
         oid,
     ])?;
     let f: Vec<&str> = meta.splitn(10, '\x1f').collect();

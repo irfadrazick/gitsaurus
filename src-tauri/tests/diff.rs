@@ -247,3 +247,25 @@ fn working_file_ignores_context_and_returns_whole_file() {
         assert_eq!(l.text, format!("row{n}"));
     }
 }
+
+#[test]
+fn option_like_oids_are_rejected() {
+    let r = TestRepo::new();
+    r.write("f.txt", "x\n");
+    r.commit_all("c");
+    let g = Git::new(r.path());
+    let out = r.path().join("leak.txt");
+    let evil = format!("--output={}", out.display());
+    assert!(commit_details(&g, &evil).is_err());
+    assert!(
+        file_diff(
+            &g,
+            "f.txt",
+            None,
+            &DiffSource::Commit { oid: evil.clone() },
+            3
+        )
+        .is_err()
+    );
+    assert!(!out.exists(), "an oid was parsed as an option");
+}

@@ -1,4 +1,5 @@
 use super::error::GitResult;
+use super::ops::branch::safe_target;
 use super::runner::Git;
 use super::types::{DiffLine, DiffSource, FileDiff, Hunk, LineKind};
 
@@ -121,7 +122,10 @@ pub fn file_diff(
     let base;
     match source {
         DiffSource::Commit { oid } => {
-            let listing = git.run_read(&["rev-list", "--parents", "-n", "1", oid])?;
+            // Validated, so `oid` (and `base`, a full hex oid) can't be read as an option below.
+            safe_target(oid)?;
+            let listing =
+                git.run_read(&["rev-list", "--parents", "-n", "1", "--end-of-options", oid])?;
             base = listing
                 .split_whitespace()
                 .nth(1)
