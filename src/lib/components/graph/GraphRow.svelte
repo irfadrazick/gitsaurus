@@ -141,7 +141,7 @@
   .marker {
     flex: none;
     padding: 0 7px;
-    border-radius: 9px;
+    border-radius: var(--radius-xs);
     background: var(--chip);
     color: var(--chip-text);
     font-size: var(--fs-xs);

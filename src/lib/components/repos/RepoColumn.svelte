@@ -161,7 +161,7 @@
     gap: 8px;
     height: 28px;
     padding: 0 10px;
-    border-radius: var(--radius);
+    border-radius: 0;
     cursor: default;
     color: var(--text);
   }
@@ -225,7 +225,7 @@
     place-items: center;
     width: 30px;
     height: 26px;
-    border-radius: var(--radius);
+    border-radius: var(--radius-xs);
     font-size: var(--fs-xs);
     font-weight: 600;
     letter-spacing: 0.02em;
@@ -241,6 +241,7 @@
     margin: 6px;
     height: 28px;
     padding: 0 8px;
+    border-radius: var(--radius-xs);
     background: transparent;
     color: var(--muted);
   }

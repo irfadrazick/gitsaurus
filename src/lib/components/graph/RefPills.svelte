@@ -52,7 +52,7 @@
     height: 20px;
     padding: 0 7px;
     border: 1px solid var(--c);
-    border-radius: var(--radius-sm);
+    border-radius: var(--radius-xs);
     background: color-mix(in srgb, var(--c) 22%, var(--bg));
     color: #e6edf3;
     font-size: var(--fs-xs);
