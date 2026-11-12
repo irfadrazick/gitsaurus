@@ -44,6 +44,7 @@
         details.author.time !== details.committer.time),
   );
   const selectedPath = $derived(repo.centre.kind === 'diff' ? repo.centre.path : null);
+  const outsideGraph = $derived(repo.selection?.kind === 'commit' && repo.selection.oid === oid && !!repo.selection.outsideGraph);
 
   function open(file: ChangedFile) {
     repo.centre = { kind: 'diff', path: file.path, origPath: file.origPath, source: { kind: 'commit', oid }, view: 'diff' };
@@ -68,6 +69,7 @@
   {:else}
     <div class="head">
       <div class="shas small">
+        {#if outsideGraph}<span class="note">Stash (not in graph)</span>{/if}
         <span class="muted">commit:</span> <span class="mono">{short(details.oid)}</span>
         {#each details.parents as p (p)}
           <span class="muted">parent:</span>
@@ -97,6 +99,13 @@
 </div>
 
 <style>
+  .note {
+    margin-right: 6px;
+    padding: 0 6px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    color: var(--muted);
+  }
   .details {
     container-type: size;
     display: flex;

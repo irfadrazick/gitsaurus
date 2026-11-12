@@ -155,8 +155,8 @@
               role="button"
               tabindex="0"
               title={s.message}
-              onclick={() => repo.revealCommit(s.oid)}
-              onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(s.oid)}
+              onclick={() => repo.selectStash(s.oid)}
+              onkeydown={(e) => e.key === 'Enter' && repo.selectStash(s.oid)}
               oncontextmenu={(e) => show(e, stashCtx(s), stashMenu)}
             >
               <span class="check"></span>

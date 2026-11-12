@@ -5,7 +5,8 @@ import { toasts } from './toasts.svelte';
 
 export const PAGE_SIZE = 200;
 
-export type Selection = { kind: 'commit'; oid: string } | { kind: 'wip' } | null;
+/** `outsideGraph`: a commit the graph does not list (a stash); details and diffs still work for it. */
+export type Selection = { kind: 'commit'; oid: string; outsideGraph?: boolean } | { kind: 'wip' } | null;
 export type Centre =
   | { kind: 'graph' }
   | {
@@ -149,6 +150,17 @@ class RepoStore {
       report('Could not locate commit', e);
       return false;
     }
+  }
+  /**
+   * Select a stash commit. Stashes are not in the graph, so when it cannot be revealed it is
+   * still selected (marked outsideGraph) so the details panel shows its contents.
+   */
+  async selectStash(oid: string) {
+    const path = this.path;
+    if (await this.revealCommit(oid)) return;
+    if (path !== this.path) return;
+    this.selection = { kind: 'commit', oid, outsideGraph: true };
+    this.centre = { kind: 'graph' };
   }
   selectWip() {
     this.selection = { kind: 'wip' };
