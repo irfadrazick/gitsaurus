@@ -1,7 +1,9 @@
 mod common;
 use common::TestRepo;
 use gitsaurus_lib::git::ops::branch::*;
-use gitsaurus_lib::git::{Git, GitError, OpOutcome, RefKind, ResetMode, list_refs, repo_state};
+use gitsaurus_lib::git::{
+    Git, GitError, GitResult, OpOutcome, RefKind, ResetMode, list_refs, repo_state,
+};
 
 fn setup() -> (TestRepo, TestRepo) {
     let bare = TestRepo::bare();
@@ -10,6 +12,12 @@ fn setup() -> (TestRepo, TestRepo) {
     a.commit_all("c1");
     a.git(&["push", "-u", "origin", "main"]);
     (bare, a)
+}
+
+fn stash_oid(r: &TestRepo, i: u32) -> String {
+    r.git(&["rev-parse", &format!("stash@{{{i}}}")])
+        .trim()
+        .to_string()
 }
 
 fn branch_names(g: &Git) -> Vec<String> {
@@ -172,18 +180,24 @@ fn stash_push_pop_apply_drop() {
     stash_push(&g, Some("wip")).unwrap();
     assert!(repo_state(&g).unwrap().files.is_empty());
     assert!(a.git(&["stash", "list"]).contains("wip"));
-    assert_eq!(stash_apply(&g, 0).unwrap(), OpOutcome::Done);
+    assert_eq!(
+        stash_apply(&g, 0, &stash_oid(&a, 0)).unwrap(),
+        OpOutcome::Done
+    );
     assert_eq!(repo_state(&g).unwrap().files.len(), 2);
     a.git(&["checkout", "--", "f.txt"]);
     std::fs::remove_file(a.path().join("new.txt")).unwrap();
-    assert_eq!(stash_pop(&g, 0).unwrap(), OpOutcome::Done);
+    assert_eq!(
+        stash_pop(&g, 0, &stash_oid(&a, 0)).unwrap(),
+        OpOutcome::Done
+    );
     assert_eq!(repo_state(&g).unwrap().files.len(), 2);
     assert!(a.git(&["stash", "list"]).is_empty());
     stash_push(&g, None).unwrap();
     a.write("f.txt", "again\n");
     stash_push(&g, Some("  ")).unwrap();
     assert_eq!(a.git(&["stash", "list"]).lines().count(), 2);
-    stash_drop(&g, 1).unwrap();
+    stash_drop(&g, 1, &stash_oid(&a, 1)).unwrap();
     assert_eq!(a.git(&["stash", "list"]).lines().count(), 1);
 }
 
@@ -195,7 +209,10 @@ fn stash_pop_that_conflicts_returns_conflicts_and_keeps_the_stash() {
     stash_push(&g, Some("wip")).unwrap();
     a.write("f.txt", "committed\n");
     a.commit_all("c2");
-    assert_eq!(stash_pop(&g, 0).unwrap(), OpOutcome::Conflicts);
+    assert_eq!(
+        stash_pop(&g, 0, &stash_oid(&a, 0)).unwrap(),
+        OpOutcome::Conflicts
+    );
     let st = repo_state(&g).unwrap();
     assert!(st.files.iter().any(|f| f.path == "f.txt" && f.conflicted));
     assert!(st.operation.is_none());
@@ -210,7 +227,10 @@ fn stash_apply_that_conflicts_returns_conflicts() {
     stash_push(&g, None).unwrap();
     a.write("f.txt", "committed\n");
     a.commit_all("c2");
-    assert_eq!(stash_apply(&g, 0).unwrap(), OpOutcome::Conflicts);
+    assert_eq!(
+        stash_apply(&g, 0, &stash_oid(&a, 0)).unwrap(),
+        OpOutcome::Conflicts
+    );
 }
 
 #[test]
@@ -220,6 +240,38 @@ fn stash_apply_refused_by_local_changes_is_an_error() {
     a.write("f.txt", "stashed\n");
     stash_push(&g, None).unwrap();
     a.write("f.txt", "local edit\n");
-    assert!(matches!(stash_apply(&g, 0), Err(GitError::Failed { .. })));
+    assert!(matches!(
+        stash_apply(&g, 0, &stash_oid(&a, 0)),
+        Err(GitError::Failed { .. })
+    ));
     assert!(repo_state(&g).unwrap().files.iter().all(|f| !f.conflicted));
+}
+
+#[test]
+fn stash_ops_refuse_when_the_index_points_at_another_stash() {
+    let (_b, a) = setup();
+    let g = Git::new(a.path());
+    a.write("f.txt", "first\n");
+    stash_push(&g, Some("first")).unwrap();
+    let first = stash_oid(&a, 0);
+    a.write("f.txt", "second\n");
+    stash_push(&g, Some("second")).unwrap();
+    // The user picked "first" at index 0, but a new stash has since moved it to index 1.
+    let changed = |r: GitResult<OpOutcome>| match r {
+        Err(GitError::Failed { message, .. }) => message == "The stash list changed; please retry",
+        _ => false,
+    };
+    assert!(changed(stash_apply(&g, 0, &first)));
+    assert!(changed(stash_pop(&g, 0, &first)));
+    assert!(matches!(
+        stash_drop(&g, 0, &first),
+        Err(GitError::Failed { message, .. }) if message == "The stash list changed; please retry"
+    ));
+    assert!(changed(stash_pop(&g, 5, &first)));
+    assert_eq!(a.git(&["stash", "list"]).lines().count(), 2);
+    assert!(repo_state(&g).unwrap().files.is_empty());
+    // The matching index works.
+    stash_drop(&g, 1, &first).unwrap();
+    assert!(a.git(&["stash", "list"]).contains("second"));
+    assert!(!a.git(&["stash", "list"]).contains("first"));
 }

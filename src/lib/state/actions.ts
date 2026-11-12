@@ -46,9 +46,10 @@ async function copy(text: string) {
  * Apply or pop a stash. A conflicting restore is not a failure: the conflicted files
  * show in Working changes, which is selected, and a pop keeps the stash entry.
  */
-export async function restoreStash(path: string, index: number, pop: boolean) {
+export async function restoreStash(path: string, stash: { index: number; oid: string }, pop: boolean) {
   const label = pop ? 'Pop stash' : 'Apply stash';
-  const out = await runOp(label, () => (pop ? api.stashPop(path, index) : api.stashApply(path, index)));
+  const { index, oid } = stash;
+  const out = await runOp(label, () => (pop ? api.stashPop(path, index, oid) : api.stashApply(path, index, oid)));
   if (out !== 'conflicts' || repo.path !== path) return;
   repo.selectWip();
   toasts.push({
@@ -264,11 +265,12 @@ export async function performMenuAction(id: string, ctx: ActionContext): Promise
     case 'stashPop':
     case 'stashDrop': {
       const i = ctx.stashIndex;
-      if (i === undefined) return;
-      if (key === 'stashApply' || key === 'stashPop') await restoreStash(path, i, key === 'stashPop');
+      const o = ctx.oid;
+      if (i === undefined || !o) return;
+      if (key === 'stashApply' || key === 'stashPop') await restoreStash(path, { index: i, oid: o }, key === 'stashPop');
       else {
         const ok = await confirm({ title: 'Delete stash?', body: `stash@{${i}} will be permanently dropped.`, danger: true, confirmLabel: 'Delete' });
-        if (ok) await runOp('Delete stash', () => api.stashDrop(path, i));
+        if (ok) await runOp('Delete stash', () => api.stashDrop(path, i, o));
       }
       return;
     }

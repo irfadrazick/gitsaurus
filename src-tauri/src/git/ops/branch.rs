@@ -172,9 +172,18 @@ pub fn stash_push(git: &Git, message: Option<&str>) -> GitResult<()> {
         .map(|_| ())
 }
 
-fn stash_op(git: &Git, op: &str, index: u32) -> GitResult<()> {
-    git.run(&["stash", op, &format!("stash@{{{index}}}")])
-        .map(|_| ())
+/// Runs `git stash <op> stash@{index}` after checking that `stash@{index}` is still the
+/// stash `oid` the user picked: the list shifts when stashes are pushed or dropped.
+fn stash_op(git: &Git, op: &str, index: u32, oid: &str) -> GitResult<()> {
+    let name = format!("stash@{{{index}}}");
+    // A missing entry fails rev-parse (exit 1, or 128 past the end of the reflog).
+    let current = git
+        .run_read(&["rev-parse", "--verify", "--quiet", &name])
+        .ok();
+    if oid.is_empty() || current.as_deref().map(str::trim) != Some(oid) {
+        return Err(failed("The stash list changed; please retry"));
+    }
+    git.run(&["stash", op, &name]).map(|_| ())
 }
 
 fn has_conflicts(git: &Git) -> bool {
@@ -185,23 +194,23 @@ fn has_conflicts(git: &Git) -> bool {
 /// so conflicts are detected from status: any conflicted file afterwards (that was
 /// not already there) means `Conflicts`, whether git exited non-zero or not.
 /// A conflicting pop keeps the stash entry.
-fn stash_restore(git: &Git, op: &str, index: u32) -> GitResult<OpOutcome> {
+fn stash_restore(git: &Git, op: &str, index: u32, oid: &str) -> GitResult<OpOutcome> {
     let before = has_conflicts(git);
-    let res = stash_op(git, op, index);
+    let res = stash_op(git, op, index, oid);
     if !before && has_conflicts(git) {
         return Ok(OpOutcome::Conflicts);
     }
     res.map(|_| OpOutcome::Done)
 }
 
-pub fn stash_apply(git: &Git, index: u32) -> GitResult<OpOutcome> {
-    stash_restore(git, "apply", index)
+pub fn stash_apply(git: &Git, index: u32, oid: &str) -> GitResult<OpOutcome> {
+    stash_restore(git, "apply", index, oid)
 }
 
-pub fn stash_pop(git: &Git, index: u32) -> GitResult<OpOutcome> {
-    stash_restore(git, "pop", index)
+pub fn stash_pop(git: &Git, index: u32, oid: &str) -> GitResult<OpOutcome> {
+    stash_restore(git, "pop", index, oid)
 }
 
-pub fn stash_drop(git: &Git, index: u32) -> GitResult<()> {
-    stash_op(git, "drop", index)
+pub fn stash_drop(git: &Git, index: u32, oid: &str) -> GitResult<()> {
+    stash_op(git, "drop", index, oid)
 }

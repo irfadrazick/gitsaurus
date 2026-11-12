@@ -22,7 +22,7 @@
   const branch = $derived(repo.state.head.branch);
   const oid = $derived(repo.state.head.oid);
   const detached = $derived(branch === null);
-  const hasStash = $derived(repo.refs.stashes.length > 0);
+  const latestStash = $derived(repo.refs.stashes.find((s) => s.index === 0) ?? null);
 
   const PULL_ITEMS: MenuItem[] = [
     { id: 'fetch', label: 'Fetch all' },
@@ -162,7 +162,7 @@
         {/if}
         <span>Stash</span>
       </button>
-      <button class="tb" onclick={() => restoreStash(path, 0, true)} disabled={!hasStash} title="Pop latest stash">
+      <button class="tb" onclick={() => latestStash && restoreStash(path, latestStash, true)} disabled={!latestStash} title="Pop latest stash">
         {#if busy.get('Pop stash')}{@render spinner()}{:else}
           <svg viewBox="0 0 16 16"><path d="M2.5 9v4h11V9M8 10V2M4.5 5.5 8 2l3.5 3.5" /></svg>
         {/if}
