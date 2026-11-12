@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Icon from '../Icon.svelte';
+  import Icon, { type IconName } from '../Icon.svelte';
   import { performMenuAction, type ActionContext } from '../../state/actions';
   import { openMenu } from '../../state/contextMenu.svelte';
   import { runOp } from '../../state/ops';
@@ -85,16 +85,17 @@
     {#if !repo.path}
       <p class="empty">No repository selected</p>
     {:else}
-      {#snippet header(key: string, title: string, count: number)}
+      {#snippet header(key: string, title: string, count: number, icon?: IconName)}
         <button class="sec" onclick={() => toggle(key)} aria-expanded={open(key)}>
           <span class="chev" class:closed={!open(key)}><Icon name="chevronDown" size={12} /></span>
+          {#if icon}<Icon name={icon} size={14} />{/if}
           <span class="stitle">{title}</span>
           <span class="count" class:zero={count === 0}>{count}</span>
         </button>
       {/snippet}
 
       {#if !q || local.length}
-        {@render header('local', 'Local', local.length)}
+        {@render header('local', 'Local', local.length, 'computer')}
         {#if open('local')}
           {#each local as b (b.name)}
             <div

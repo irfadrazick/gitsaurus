@@ -11,6 +11,7 @@
     arrowDown: 'M8 3.5v9M4.5 9 8 12.5 11.5 9',
     file: 'M4.5 2.5h4.5l3 3v8h-7.5zM9 2.5v3h3',
     sidebar: 'M2.5 3.5h11v9h-11zM6.5 3.5v9',
+    computer: 'M3.5 4h9v6.5h-9zM1.5 12.5h13',
     home: 'M2.5 7.5 8 3l5.5 4.5M4 6.5v6.5h8V6.5',
     folder: 'M2 4.5h4l1.5 1.5H14v6.5H2z',
     pencil: 'M10.5 3 13 5.5 6 12.5H3.5V10z',
