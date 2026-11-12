@@ -68,7 +68,7 @@ export const markResolved = (repo: string, path: string) => invoke<void>('mark_r
 
 // remote
 export const fetchAll = (repo: string) => invoke<void>('fetch_all', { repo });
-export const pull = (repo: string, mode: PullMode) => invoke<void>('pull', { repo, mode });
+export const pull = (repo: string, mode: PullMode) => invoke<OpOutcome>('pull', { repo, mode });
 export const pullBranch = (repo: string, local: string) => invoke<void>('pull_branch', { repo, local });
 export const push = (repo: string, branch: string, force: boolean) => invoke<void>('push', { repo, branch, force });
 export const setUpstream = (repo: string, local: string, remoteBranch: string) =>

@@ -1,11 +1,13 @@
 <script lang="ts">
   import { closeModal, modalState } from '../../state/modal.svelte';
+  import { shouldEnterConfirm } from '../../util/modalKeys';
 
   const req = $derived(modalState.current);
   let value = $state('');
   let error = $state<string | null>(null);
   let seq = 0;
   let inputEl = $state<HTMLInputElement>();
+  let cancelEl = $state<HTMLButtonElement>();
 
   // Reset local fields whenever a new request appears.
   $effect(() => {
@@ -14,6 +16,7 @@
     error = null;
     value = r?.type === 'prompt' ? (r.initial ?? '') : '';
     if (r?.type === 'prompt') queueMicrotask(() => inputEl?.select());
+    else if (r?.type === 'confirm' && r.danger) queueMicrotask(() => cancelEl?.focus());
   });
 
   const options = $derived(
@@ -57,7 +60,7 @@
     if (e.key === 'Escape') {
       e.preventDefault();
       cancel();
-    } else if (e.key === 'Enter' && req?.type === 'confirm') {
+    } else if (e.key === 'Enter' && req && shouldEnterConfirm(req.type, req.type === 'confirm' && !!req.danger, document.activeElement?.tagName ?? null)) {
       e.preventDefault();
       finish(true);
     }
@@ -74,7 +77,7 @@
       {#if req.type === 'confirm'}
         <p class="body">{req.body}</p>
         <div class="actions">
-          <button onclick={cancel}>Cancel</button>
+          <button bind:this={cancelEl} onclick={cancel}>Cancel</button>
           <button class={req.danger ? 'danger' : 'primary'} onclick={() => finish(true)}>{req.confirmLabel}</button>
         </div>
       {:else if req.type === 'prompt'}
