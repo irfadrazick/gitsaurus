@@ -58,6 +58,11 @@ export const stashPop = (repo: string, index: number, oid: string) =>
 export const stashDrop = (repo: string, index: number, oid: string) =>
   invoke<void>('stash_drop', { repo, index, oid });
 
+// worktrees (git worktree); `force` also discards the worktree's uncommitted changes
+export const removeWorktree = (repo: string, path: string, force: boolean) =>
+  invoke<void>('remove_worktree', { repo, path, force });
+export const pruneWorktrees = (repo: string) => invoke<void>('prune_worktrees', { repo });
+
 // integrate
 export const merge = (repo: string, target: string) => invoke<OpOutcome>('merge', { repo, target });
 export const rebase = (repo: string, onto: string) => invoke<OpOutcome>('rebase', { repo, onto });

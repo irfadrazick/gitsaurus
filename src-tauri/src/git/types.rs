@@ -64,6 +64,26 @@ pub struct Refs {
     pub remotes: Vec<String>,
     pub tags: Vec<Tag>,
     pub stashes: Vec<Stash>,
+    pub worktrees: Vec<Worktree>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct Worktree {
+    /// Absolute path as git reports it.
+    pub path: String,
+    /// Folder name.
+    pub name: String,
+    /// Checked-out branch (short name); None when detached.
+    pub branch: Option<String>,
+    /// None when HEAD is unborn.
+    pub oid: Option<String>,
+    pub is_main: bool,
+    /// The worktree this repository was opened at.
+    pub is_current: bool,
+    /// Its folder is gone (`git worktree prune` cleans it up).
+    pub missing: bool,
+    pub locked: bool,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]

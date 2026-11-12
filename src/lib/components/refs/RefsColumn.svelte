@@ -5,9 +5,11 @@
   import { runOp } from '../../state/ops';
   import { repo } from '../../state/repo.svelte';
   import * as api from '../../api';
-  import type { Branch, RemoteBranch, Stash, Tag } from '../../types';
+  import { openWorktree, performWorktreeAction } from '../../state/worktrees';
+  import type { Branch, RemoteBranch, Stash, Tag, Worktree } from '../../types';
   import type { MenuKind } from '../../util/actionTable';
-  import { branchMenu, remoteBranchMenu, stashMenu, tagMenu, type MenuItem } from '../../util/menus';
+  import { branchMenu, remoteBranchMenu, stashMenu, tagMenu, worktreeMenu, type MenuItem } from '../../util/menus';
+  import { checkedOutElsewhere, worktreeLabel } from '../../util/worktrees';
 
   let filter = $state('');
   let collapsed = $state<Record<string, boolean>>({});
@@ -25,6 +27,8 @@
   const remoteCount = $derived(remoteGroups.reduce((n, g) => n + g.branches.length, 0));
   const tags = $derived(refs.tags.filter((t) => match(t.name)));
   const stashes = $derived(refs.stashes.filter((s) => match(s.message)));
+  const worktrees = $derived(refs.worktrees.filter((w) => match(worktreeLabel(w)) || match(w.name)));
+  const elsewhere = $derived(checkedOutElsewhere(refs.worktrees));
 
   const selectedOid = $derived(repo.selection?.kind === 'commit' ? repo.selection.oid : null);
 
@@ -57,6 +61,18 @@
     runOp('Checkout', () => api.checkout(path, b.name, 'local'));
   }
 
+  function showWorktree(e: MouseEvent, w: Worktree) {
+    e.preventDefault();
+    const path = repo.path;
+    if (path) openMenu(e.clientX, e.clientY, worktreeMenu(w), (id) => performWorktreeAction(id, path, w));
+  }
+
+  function branchTitle(b: Branch) {
+    const base = b.upstream ? `${b.name} → ${b.upstream}${b.gone ? ' (gone)' : ''}` : b.name;
+    const w = elsewhere.get(b.name);
+    return w ? `${base}\nChecked out in worktree ${w.name}` : base;
+  }
+
   const toggle = (k: string) => (collapsed[k] = !collapsed[k]);
   const open = (k: string) => !collapsed[k] || !!q;
 </script>
@@ -87,7 +103,7 @@
               class:head={b.isHead}
               role="button"
               tabindex="0"
-              title={b.upstream ? `${b.name} → ${b.upstream}${b.gone ? ' (gone)' : ''}` : b.name}
+              title={branchTitle(b)}
               onclick={() => repo.revealCommit(b.oid)}
               onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(b.oid)}
               ondblclick={() => checkout(b)}
@@ -95,6 +111,7 @@
             >
               <span class="check">{#if b.isHead}<Icon name="check" size={12} stroke={2} />{/if}</span>
               <span class="name">{b.name}</span>
+              {#if elsewhere.has(b.name)}<span class="wt" aria-label="Checked out in another worktree"><Icon name="folder" size={12} /></span>{/if}
               {#if b.gone}<span class="badge gone">gone</span>{/if}
               {#if b.ahead > 0}<span class="badge">↑{b.ahead}</span>{/if}
               {#if b.behind > 0}<span class="badge">↓{b.behind}</span>{/if}
@@ -167,7 +184,36 @@
         {/if}
       {/if}
 
-      {#if q && !local.length && !remoteCount && !tags.length && !stashes.length}
+      {#if !q || worktrees.length}
+        {@render header('worktrees', 'Worktrees', worktrees.length)}
+        {#if open('worktrees')}
+          {#each worktrees as w (w.path)}
+            <div
+              class="row"
+              class:selected={!!w.oid && selectedOid === w.oid}
+              class:head={w.isCurrent}
+              class:missing={w.missing}
+              role="button"
+              tabindex="0"
+              title={w.missing ? `${w.path} (folder missing)` : w.path}
+              onclick={() => w.oid && repo.revealCommit(w.oid)}
+              onkeydown={(e) => e.key === 'Enter' && w.oid && repo.revealCommit(w.oid)}
+              ondblclick={() => openWorktree(w)}
+              oncontextmenu={(e) => showWorktree(e, w)}
+            >
+              <span class="check">{#if w.isCurrent}<Icon name="check" size={12} stroke={2} />{/if}</span>
+              <span class="name" class:mono={!w.branch}>{worktreeLabel(w)}</span>
+              {#if w.missing}<span class="badge gone">missing</span>{/if}
+              <span class="folder">
+                <Icon name={w.isMain ? 'home' : 'folder'} size={12} />
+                <span class="fname">{w.name}</span>
+              </span>
+            </div>
+          {/each}
+        {/if}
+      {/if}
+
+      {#if q && !local.length && !remoteCount && !tags.length && !stashes.length && !worktrees.length}
         <p class="empty">No refs match “{filter}”</p>
       {/if}
     {/if}
@@ -293,6 +339,38 @@
   .row.selected .badge {
     background: rgb(255 255 255 / 0.12);
     color: var(--sel-text);
+  }
+  .wt {
+    flex: none;
+    display: inline-flex;
+    color: var(--muted);
+  }
+  .row.selected .wt,
+  .row.selected .folder {
+    color: var(--sel-muted);
+  }
+  .folder {
+    flex: 0 1 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    max-width: 50%;
+    min-width: 0;
+    color: var(--muted);
+    font-size: var(--fs-sm);
+  }
+  .fname {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .mono {
+    font-family: var(--mono);
+    font-size: var(--fs-sm);
+  }
+  .row.missing .name {
+    color: var(--muted);
+    text-decoration: line-through;
   }
   .empty {
     padding: 12px;
