@@ -6,6 +6,7 @@
 <script lang="ts">
   import * as api from '../../api';
   import { pullHead, restoreStash, validator } from '../../state/actions';
+  import { onCommand } from '../../state/commands';
   import { openMenu } from '../../state/contextMenu.svelte';
   import { confirm, prompt } from '../../state/modal.svelte';
   import { busy, runOp } from '../../state/ops';
@@ -26,8 +27,8 @@
   const latestStash = $derived(repo.refs.stashes.find((s) => s.index === 0) ?? null);
 
   const PULL_ITEMS: MenuItem[] = [
-    { id: 'fetch', label: 'Fetch all' },
-    { id: 'default', label: 'Pull (fast-forward if possible)', separatorBefore: true, hint: 'Default' },
+    { id: 'fetch', label: 'Fetch all', hint: '⌘⇧F' },
+    { id: 'default', label: 'Pull (fast-forward if possible)', separatorBefore: true, hint: 'Default · ⌘⇧P' },
     { id: 'ffOnly', label: 'Pull (fast-forward only)' },
     { id: 'rebase', label: 'Pull (rebase)' },
   ];
@@ -59,6 +60,20 @@
       }
     }, ms);
     return () => clearInterval(id);
+  });
+
+  // Keyboard shortcuts (App) run the same handlers as the buttons, with the same busy guards.
+  $effect(() => {
+    const offs = [
+      onCommand('pull', () => (pulling ? undefined : pullMode('default'))),
+      onCommand('push', () => (pushing ? undefined : push())),
+      onCommand('fetch', () => {
+        const p = path;
+        if (p && !pulling) runOp('Fetch', () => api.fetchAll(p));
+      }),
+      onCommand('newBranch', () => void newBranch()),
+    ];
+    return () => offs.forEach((off) => off());
   });
 
   function pullMode(mode: PullMode) {
@@ -138,7 +153,7 @@
     </div>
     <div class="actions">
       <div class="split">
-        <button class="tb" onclick={() => (pulling ? cancelNetwork() : pullMode('default'))} title={pulling ? 'Cancel' : 'Pull'}>
+        <button class="tb" onclick={() => (pulling ? cancelNetwork() : pullMode('default'))} title={pulling ? 'Cancel' : 'Pull (⌘⇧P)'}>
           {#if pulling}{@render spinner()}{:else}
             <svg viewBox="0 0 16 16"><path d="M8 2v9M4.5 7.5 8 11l3.5-3.5M3 14h10" /></svg>
           {/if}
@@ -146,13 +161,13 @@
         </button>
         <button class="caret" onclick={pullMenu} disabled={pulling} aria-label="Pull options" title="Pull options"><Icon name="chevronDown" size={12} /></button>
       </div>
-      <button class="tb" onclick={() => (pushing ? cancelNetwork() : push())} disabled={detached && !pushing} title={pushing ? 'Cancel' : 'Push'}>
+      <button class="tb" onclick={() => (pushing ? cancelNetwork() : push())} disabled={detached && !pushing} title={pushing ? 'Cancel' : 'Push (⌘P)'}>
         {#if pushing}{@render spinner()}{:else}
           <svg viewBox="0 0 16 16"><path d="M8 11V2M4.5 5.5 8 2l3.5 3.5M3 14h10" /></svg>
         {/if}
         <span>{pushing ? 'Cancel' : 'Push'}</span>
       </button>
-      <button class="tb" onclick={newBranch} title="Create branch">
+      <button class="tb" onclick={newBranch} title="Create branch (⌘⇧N)">
         {#if busy.get('Create branch')}{@render spinner()}{:else}
           <svg viewBox="0 0 16 16"><circle cx="4.5" cy="3.5" r="1.5" /><circle cx="4.5" cy="12.5" r="1.5" /><circle cx="11.5" cy="5.5" r="1.5" /><path d="M4.5 5v6M11.5 7c0 3-7 1.5-7 3.5" /></svg>
         {/if}

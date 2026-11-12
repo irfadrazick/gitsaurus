@@ -1,4 +1,7 @@
 <script lang="ts">
+  import { runCommand } from './lib/state/commands';
+  import { modalState } from './lib/state/modal.svelte';
+  import { runOp } from './lib/state/ops';
   import { listen } from '@tauri-apps/api/event';
   import { onMount, untrack } from 'svelte';
   import * as api from './lib/api';
@@ -23,7 +26,7 @@
   import { settings } from './lib/state/settings.svelte';
   import { ui } from './lib/state/ui.svelte';
   import type { ChangeKind, RepoChanged } from './lib/types';
-  import { matchShortcut } from './lib/util/shortcuts';
+  import { isGitAction, matchShortcut } from './lib/util/shortcuts';
   import { watchDiff } from './lib/util/watchDiff';
 
   onMount(() => {
@@ -98,6 +101,18 @@
       return;
     }
     e.preventDefault();
+    if (isGitAction(action)) {
+      // Git actions never fire behind an open dialog or settings.
+      if (modalState.current || ui.settingsOpen || !repo.path) return;
+      const path = repo.path;
+      if (action === 'stageAll' || action === 'unstageAll') {
+        // During a merge/rebase, staging is how conflicts are marked resolved: leave that to the conflict panel.
+        if (repo.state.operation) return;
+        if (action === 'stageAll') runOp('Stage all', () => api.stageAll(path));
+        else runOp('Unstage all', () => api.unstageAll(path));
+      } else runCommand(action);
+      return;
+    }
     if (action === 'toggleRepos') session.reposCollapsed = !session.reposCollapsed;
     else if (action === 'search') {
       repo.showGraph();
