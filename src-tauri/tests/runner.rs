@@ -82,3 +82,46 @@ fn timeout_run_returns_output_and_errors_like_run() {
         .unwrap_err();
     assert!(matches!(err, GitError::Failed { .. }), "{err:?}");
 }
+
+/// Configures alias `t` running `script`. `run_network` passes `--progress` to it, so
+/// scripts end in `true` (the alias appends its arguments there).
+fn network_alias(r: &TestRepo, script: &str) {
+    r.git(&["config", "alias.t", &format!("!{script}; true")]);
+}
+
+#[test]
+fn network_commands_on_one_repo_run_one_at_a_time() {
+    let r = TestRepo::new();
+    // Fails (exit 9) if another run is inside the critical section at the same time.
+    network_alias(&r, "mkdir busy || exit 9; sleep 0.5; rmdir busy");
+    let path = r.path().to_path_buf();
+    let a = std::thread::spawn({
+        let p = path.clone();
+        move || Git::new(&p).run_network(&["t"])
+    });
+    std::thread::sleep(Duration::from_millis(100));
+    let b = Git::new(&path).run_network(&["t"]);
+    assert!(b.is_ok(), "{b:?}");
+    assert!(a.join().unwrap().is_ok());
+}
+
+#[test]
+fn a_background_network_command_skips_when_one_is_running() {
+    let r = TestRepo::new();
+    network_alias(&r, "sleep 1");
+    let path = r.path().to_path_buf();
+    let a = std::thread::spawn({
+        let p = path.clone();
+        move || Git::new(&p).run_network(&["t"])
+    });
+    std::thread::sleep(Duration::from_millis(200));
+    let start = Instant::now();
+    let skipped = Git::new(&path).run_network_if_idle(&["t"]).unwrap();
+    assert_eq!(skipped, None);
+    assert!(
+        start.elapsed() < Duration::from_millis(500),
+        "waited {:?}",
+        start.elapsed()
+    );
+    assert!(a.join().unwrap().is_ok());
+}

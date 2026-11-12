@@ -71,7 +71,10 @@ export const resolveConflict = (repo: string, path: string, side: Side) =>
 export const markResolved = (repo: string, path: string) => invoke<void>('mark_resolved', { repo, path });
 
 // remote
-export const fetchAll = (repo: string) => invoke<void>('fetch_all', { repo });
+/** `background`: the periodic fetch, which skips its turn while another network command runs. */
+export const fetchAll = (repo: string, background = false) => invoke<void>('fetch_all', { repo, background });
+/** Cancels every running or queued network command; resolves to how many. */
+export const cancelNetwork = () => invoke<number>('cancel_network');
 export const pull = (repo: string, mode: PullMode) => invoke<OpOutcome>('pull', { repo, mode });
 export const pullBranch = (repo: string, local: string) => invoke<void>('pull_branch', { repo, local });
 export const push = (repo: string, branch: string, force: boolean) => invoke<void>('push', { repo, branch, force });

@@ -33,6 +33,13 @@
 
   const msg = (e: unknown) => (e as Partial<GitError>)?.message ?? String(e);
 
+  // While a network command runs, its toolbar button becomes Cancel (they have no time limit).
+  const pulling = $derived(busy.has('Pull') || busy.has('Fetch'));
+  const pushing = $derived(busy.has('Push') || busy.has('Force push'));
+  function cancelNetwork() {
+    api.cancelNetwork().catch((e) => console.warn('cancel failed', e));
+  }
+
   // Background fetch: silent, skipped while any foreground op is running.
   $effect(() => {
     const p = path;
@@ -43,7 +50,7 @@
       if (!shouldFetch(busy.size > 0, min, bg.fetching !== null) || repo.path !== p) return;
       bg.fetching = p;
       try {
-        await api.fetchAll(p);
+        await api.fetchAll(p, true);
         if (repo.path === p) await repo.refresh(['Git']);
       } catch (e) {
         console.warn('background fetch failed', e);
@@ -141,21 +148,19 @@
     </div>
     <div class="actions">
       <div class="split">
-        <button class="tb" onclick={() => pullMode('default')} disabled={busy.has('Pull')} title="Pull">
-          {#if busy.get('Pull')}{@render spinner()}{:else}
+        <button class="tb" onclick={() => (pulling ? cancelNetwork() : pullMode('default'))} title={pulling ? 'Cancel' : 'Pull'}>
+          {#if pulling}{@render spinner()}{:else}
             <svg viewBox="0 0 16 16"><path d="M8 2v9M4.5 7.5 8 11l3.5-3.5M3 14h10" /></svg>
           {/if}
-          <span>Pull</span>
+          <span>{pulling ? 'Cancel' : 'Pull'}</span>
         </button>
-        <button class="caret" onclick={pullMenu} aria-label="Pull options" title="Pull options">
-          {#if busy.get('Fetch')}{@render spinner()}{:else}▾{/if}
-        </button>
+        <button class="caret" onclick={pullMenu} disabled={pulling} aria-label="Pull options" title="Pull options">▾</button>
       </div>
-      <button class="tb" onclick={() => push()} disabled={detached || busy.has('Push')} title="Push">
-        {#if busy.get('Push')}{@render spinner()}{:else}
+      <button class="tb" onclick={() => (pushing ? cancelNetwork() : push())} disabled={detached && !pushing} title={pushing ? 'Cancel' : 'Push'}>
+        {#if pushing}{@render spinner()}{:else}
           <svg viewBox="0 0 16 16"><path d="M8 11V2M4.5 5.5 8 2l3.5 3.5M3 14h10" /></svg>
         {/if}
-        <span>Push</span>
+        <span>{pushing ? 'Cancel' : 'Push'}</span>
       </button>
       <button class="tb" onclick={newBranch} title="Create branch">
         {#if busy.get('Create branch')}{@render spinner()}{:else}
@@ -281,7 +286,8 @@
   .tb.on span {
     color: var(--text);
   }
-  .tb:disabled {
+  .tb:disabled,
+  .caret:disabled {
     opacity: 0.4;
   }
   .spin {

@@ -12,6 +12,9 @@ pub enum GitError {
     PushRejected { message: String, stderr: String },
     #[error("{message}")]
     Failed { message: String, stderr: String },
+    /// The user cancelled a network command (`cancel_network`).
+    #[error("{message}")]
+    Cancelled { message: String },
 }
 
 pub type GitResult<T> = Result<T, GitError>;

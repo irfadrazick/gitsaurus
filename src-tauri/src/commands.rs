@@ -503,11 +503,25 @@ pub async fn mark_resolved(
     .await
 }
 
-/// Runs WITHOUT the repo lock, like a read: git takes its own ref locks, and a
-/// (background) fetch waiting on the network must not block local operations.
+/// Runs WITHOUT the repo lock, like a read: a fetch waiting on the network must not block
+/// local operations. Network commands on one repo still run one at a time (the runner's
+/// network lock); a background fetch skips its turn when one is already running.
 #[tauri::command]
-pub async fn fetch_all(repo: String) -> GitResult<()> {
-    read(repo, move |git| remote::fetch_all(&git)).await
+pub async fn fetch_all(repo: String, background: bool) -> GitResult<()> {
+    read(repo, move |git| {
+        if background {
+            remote::background_fetch(&git)
+        } else {
+            remote::fetch_all(&git)
+        }
+    })
+    .await
+}
+
+/// Cancels every running or queued network command (the busy toolbar button).
+#[tauri::command]
+pub fn cancel_network() -> usize {
+    crate::git::cancel_network()
 }
 
 #[tauri::command]

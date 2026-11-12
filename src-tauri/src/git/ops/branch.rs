@@ -117,7 +117,8 @@ pub fn delete_branch(git: &Git, name: &str, force: bool, remote: Option<&str>) -
         name,
     ])?;
     if let Some(r) = remote {
-        git.run_network(&["push", r, "--delete", "--end-of-options", name])?;
+        // Bounded: started from a menu, so there is no Cancel button for it.
+        git.run_network_bounded(&["push", r, "--delete", "--end-of-options", name])?;
     }
     Ok(())
 }
@@ -139,7 +140,7 @@ pub fn delete_tag(git: &Git, name: &str, remote: Option<&str>) -> GitResult<()> 
     }
     git.run(&["tag", "-d", "--end-of-options", name])?;
     if let Some(r) = remote {
-        git.run_network(&[
+        git.run_network_bounded(&[
             "push",
             r,
             "--delete",

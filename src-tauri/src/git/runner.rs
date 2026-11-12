@@ -1,18 +1,93 @@
 use super::env::git_env;
 use super::error::{GitError, GitResult};
+use std::collections::HashMap;
 use std::io::{ErrorKind, Read, Write};
 use std::os::unix::process::CommandExt;
 use std::path::{Path, PathBuf};
 use std::process::{Child, Command, ExitStatus, Stdio};
-use std::sync::Arc;
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::mpsc;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::{Arc, LazyLock, Mutex, TryLockError, mpsc};
 use std::time::{Duration, Instant};
 
-/// A command that talks to a remote (fetch, pull, push) is stopped after this long with no
-/// output at all. There is no overall deadline: `--progress` keeps a working transfer
+/// A network command with no Cancel button (background fetch, deleting on the remote) is
+/// stopped after this long with no output at all. `--progress` keeps a working transfer
 /// reporting, so only a stalled connection (or a hook silent for this long) reaches it.
 pub const NETWORK_STALL_LIMIT: Duration = Duration::from_secs(300);
+
+/// One lock per repo path: network commands on a repo run one at a time, so a manual
+/// Fetch/Pull never races a background fetch for the same ref locks.
+static NET_LOCKS: LazyLock<Mutex<HashMap<PathBuf, Arc<Mutex<()>>>>> =
+    LazyLock::new(Default::default);
+
+/// Cancel flags of every network command running or queued, by registration id.
+static CANCEL_FLAGS: LazyLock<Mutex<HashMap<u64, Arc<AtomicBool>>>> =
+    LazyLock::new(Default::default);
+static NEXT_CANCEL_ID: AtomicU64 = AtomicU64::new(0);
+
+fn net_lock(repo: &Path) -> Arc<Mutex<()>> {
+    let mut locks = NET_LOCKS.lock().unwrap_or_else(|e| e.into_inner());
+    locks.entry(repo.to_path_buf()).or_default().clone()
+}
+
+/// A registered cancel flag; dropping it unregisters.
+struct CancelToken {
+    id: u64,
+    flag: Arc<AtomicBool>,
+}
+
+impl CancelToken {
+    fn register() -> CancelToken {
+        let id = NEXT_CANCEL_ID.fetch_add(1, Ordering::Relaxed);
+        let flag = Arc::new(AtomicBool::new(false));
+        CANCEL_FLAGS
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .insert(id, flag.clone());
+        CancelToken { id, flag }
+    }
+
+    fn cancelled(&self) -> bool {
+        self.flag.load(Ordering::Relaxed)
+    }
+}
+
+impl Drop for CancelToken {
+    fn drop(&mut self) {
+        CANCEL_FLAGS
+            .lock()
+            .unwrap_or_else(|e| e.into_inner())
+            .remove(&self.id);
+    }
+}
+
+/// Cancels every network command that is running or waiting its turn, in any repo.
+/// Returns how many were cancelled.
+pub fn cancel_network() -> usize {
+    let flags = CANCEL_FLAGS.lock().unwrap_or_else(|e| e.into_inner());
+    for f in flags.values() {
+        f.store(true, Ordering::Relaxed);
+    }
+    flags.len()
+}
+
+fn cancelled_err() -> GitError {
+    GitError::Cancelled {
+        message: "Cancelled".into(),
+    }
+}
+
+/// How `exec` supervises a child: an optional no-output limit and a cancel flag.
+struct Watch {
+    stall_limit: Option<Duration>,
+    cancel: Arc<AtomicBool>,
+}
+
+/// Whether a network command waits for the repo's network lock or gives up at once.
+#[derive(PartialEq)]
+enum Turn {
+    Wait,
+    SkipIfBusy,
+}
 
 /// After SIGTERM, how long git gets to remove its lock files before SIGKILL.
 const TERM_GRACE: Duration = Duration::from_secs(2);
@@ -40,17 +115,68 @@ impl Git {
     /// Like `run`, but once the child has produced no output for `limit` it (and anything it
     /// spawned, e.g. ssh) is stopped, returning `Failed` "No progress for N, stopped".
     pub fn run_with_stall_limit(&self, args: &[&str], limit: Duration) -> GitResult<String> {
-        self.exec(args, &[0], None, &[], Some(limit))
+        let watch = Watch {
+            stall_limit: Some(limit),
+            cancel: Arc::new(AtomicBool::new(false)),
+        };
+        self.exec(args, &[0], None, &[], Some(watch))
     }
 
-    /// A command that talks to a remote. `args[0]` is the subcommand; `--progress` is added
-    /// after it so a slow but working transfer keeps resetting the stall limit.
+    /// A network command the user can cancel (Pull, Fetch, Push in the toolbar): no time
+    /// limit. Waits its turn behind any other network command on this repo.
     pub fn run_network(&self, args: &[&str]) -> GitResult<String> {
+        self.network(args, None, Turn::Wait)
+            .map(Option::unwrap_or_default)
+    }
+
+    /// A network command with no Cancel button: stopped after `NETWORK_STALL_LIMIT` of silence.
+    pub fn run_network_bounded(&self, args: &[&str]) -> GitResult<String> {
+        self.network(args, Some(NETWORK_STALL_LIMIT), Turn::Wait)
+            .map(Option::unwrap_or_default)
+    }
+
+    /// Background work: runs only if no network command is running on this repo,
+    /// returning `None` when it skipped. Bounded like `run_network_bounded`.
+    pub fn run_network_if_idle(&self, args: &[&str]) -> GitResult<Option<String>> {
+        self.network(args, Some(NETWORK_STALL_LIMIT), Turn::SkipIfBusy)
+    }
+
+    /// `args[0]` is the subcommand; `--progress` is added after it so a slow but working
+    /// transfer keeps producing output. Cancellable while queued and while running.
+    fn network(
+        &self,
+        args: &[&str],
+        stall_limit: Option<Duration>,
+        turn: Turn,
+    ) -> GitResult<Option<String>> {
+        let token = CancelToken::register();
+        let lock = net_lock(&self.repo);
+        let _turn = loop {
+            match lock.try_lock() {
+                Ok(g) => break g,
+                Err(TryLockError::Poisoned(p)) => break p.into_inner(),
+                Err(TryLockError::WouldBlock) if turn == Turn::SkipIfBusy => return Ok(None),
+                Err(TryLockError::WouldBlock) => {
+                    if token.cancelled() {
+                        return Err(cancelled_err());
+                    }
+                    std::thread::sleep(Duration::from_millis(50));
+                }
+            }
+        };
+        if token.cancelled() {
+            return Err(cancelled_err());
+        }
         let mut with_progress = Vec::with_capacity(args.len() + 1);
         with_progress.extend(args.first());
         with_progress.push("--progress");
         with_progress.extend(args.iter().skip(1));
-        self.run_with_stall_limit(&with_progress, NETWORK_STALL_LIMIT)
+        let watch = Watch {
+            stall_limit,
+            cancel: token.flag.clone(),
+        };
+        self.exec(&with_progress, &[0], None, &[], Some(watch))
+            .map(Some)
     }
 
     /// Read-only command: avoids taking optional index locks.
@@ -92,7 +218,7 @@ impl Git {
         ok: &[i32],
         stdin: Option<&str>,
         extra_env: &[(&str, &str)],
-        stall_limit: Option<Duration>,
+        watch: Option<Watch>,
     ) -> GitResult<String> {
         if !self.repo.is_dir() {
             return Err(GitError::NotARepo {
@@ -119,8 +245,8 @@ impl Git {
         for (k, v) in extra_env {
             cmd.env(k, v);
         }
-        if stall_limit.is_some() {
-            // Own process group, so a stall stops git's helpers (ssh, remote-https) too.
+        if watch.is_some() {
+            // Own process group, so a stall or cancel stops git's helpers (ssh, remote-https) too.
             cmd.process_group(0);
         }
         let mut child = cmd.spawn().map_err(|e| {
@@ -143,7 +269,7 @@ impl Git {
                 let _ = pipe.write_all(&data);
             })
         });
-        let (status, out_bytes, err_bytes) = match stall_limit {
+        let (status, out_bytes, err_bytes) = match watch {
             None => {
                 let out = child.wait_with_output().map_err(|e| GitError::Failed {
                     message: e.to_string(),
@@ -151,7 +277,7 @@ impl Git {
                 })?;
                 (out.status, out.stdout, out.stderr)
             }
-            Some(limit) => wait_with_stall_limit(child, limit)?,
+            Some(w) => wait_watched(child, &w)?,
         };
         if let Some(w) = writer {
             let _ = w.join();
@@ -303,10 +429,7 @@ fn human(d: Duration) -> String {
 /// Same try_wait pattern as `env::login_env_from`. Pipes are read on threads so a full pipe
 /// cannot stall the child, and a helper that outlives git while holding a pipe cannot stall
 /// us: after a short grace it is killed and git's exit status stands.
-fn wait_with_stall_limit(
-    mut child: Child,
-    limit: Duration,
-) -> GitResult<(ExitStatus, Vec<u8>, Vec<u8>)> {
+fn wait_watched(mut child: Child, watch: &Watch) -> GitResult<(ExitStatus, Vec<u8>, Vec<u8>)> {
     let start = Instant::now();
     let last_output = Arc::new(AtomicU64::new(0));
     let out = drain(child.stdout.take(), last_output.clone(), start);
@@ -314,9 +437,15 @@ fn wait_with_stall_limit(
     let status = loop {
         match child.try_wait() {
             Ok(Some(s)) => break s,
+            Ok(None) if watch.cancel.load(Ordering::Relaxed) => {
+                stop_group(&mut child);
+                return Err(cancelled_err());
+            }
             Ok(None) => {
                 let quiet = millis_since(start).saturating_sub(last_output.load(Ordering::Relaxed));
-                if Duration::from_millis(quiet) >= limit {
+                if let Some(limit) = watch.stall_limit
+                    && Duration::from_millis(quiet) >= limit
+                {
                     stop_group(&mut child);
                     return Err(GitError::Failed {
                         message: format!("No progress for {}, stopped", human(limit)),

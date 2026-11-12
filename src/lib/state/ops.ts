@@ -25,7 +25,9 @@ export async function runOp<T>(label: string, fn: () => Promise<T>, opts: RunOpt
     return result;
   } catch (e) {
     const err = e as Partial<GitError>;
-    if (err?.kind === 'pushRejected' && opts.onPushRejected) {
+    if (err?.kind === 'cancelled') {
+      toasts.push({ kind: 'info', title: `${label} cancelled` });
+    } else if (err?.kind === 'pushRejected' && opts.onPushRejected) {
       opts.onPushRejected();
     } else if (!opts.onError?.(e)) {
       const stderr = (err as { stderr?: string } | null)?.stderr;
