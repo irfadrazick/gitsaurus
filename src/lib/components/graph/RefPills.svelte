@@ -59,7 +59,7 @@
     background: color-mix(in srgb, var(--c) 22%, var(--bg));
     color: #e6edf3;
     font-size: var(--fs-xs);
-    font-weight: 600;
+    font-weight: 400;
     line-height: 1;
     white-space: nowrap;
   }
@@ -76,6 +76,8 @@
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* A line box taller than 1em, or overflow: hidden clips descenders (g, p, y). */
+    line-height: 16px;
   }
   .more {
     padding: 0 5px;
