@@ -38,6 +38,8 @@ class RepoStore {
   centre = $state<Centre>({ kind: 'graph' });
   /** Bumped on every graph reload so views can reset scroll/caches. */
   graphVersion = $state(0);
+  /** Request for the graph to scroll to a row; `n` makes repeated requests for one index distinct. */
+  reveal = $state<{ index: number; n: number } | null>(null);
 
   #token = 0;
   #inflight = new Set<number>();
@@ -132,6 +134,21 @@ class RepoStore {
   selectCommit(oid: string) {
     this.selection = { kind: 'commit', oid };
     this.centre = { kind: 'graph' };
+  }
+  /** Find `oid` in the graph, select it and ask the graph to scroll to it. Returns false when it is not in the graph. */
+  async revealCommit(oid: string): Promise<boolean> {
+    const path = this.path;
+    if (!path) return false;
+    try {
+      const index = await api.findCommit(path, oid);
+      if (path !== this.path || index === null) return false;
+      this.selectCommit(oid);
+      this.reveal = { index, n: (this.reveal?.n ?? 0) + 1 };
+      return true;
+    } catch (e) {
+      report('Could not locate commit', e);
+      return false;
+    }
   }
   selectWip() {
     this.selection = { kind: 'wip' };

@@ -6,7 +6,11 @@ import { toasts } from './toasts.svelte';
 /** In-flight operations by label (reactive). */
 export const busy = new SvelteMap<string, boolean>();
 
-export interface RunOpts { onPushRejected?: () => void }
+export interface RunOpts {
+  onPushRejected?: () => void;
+  /** Return true to claim the error: no toast is shown (the caller follows up itself). */
+  onError?: (e: unknown) => boolean;
+}
 
 /**
  * Run a backend operation with busy tracking, toasts and a post-success refresh.
@@ -23,7 +27,7 @@ export async function runOp<T>(label: string, fn: () => Promise<T>, opts: RunOpt
     const err = e as Partial<GitError>;
     if (err?.kind === 'pushRejected' && opts.onPushRejected) {
       opts.onPushRejected();
-    } else {
+    } else if (!opts.onError?.(e)) {
       const stderr = (err as { stderr?: string } | null)?.stderr;
       toasts.push({ kind: 'error', title: `${label} failed`, detail: stderr || err?.message || String(e) });
     }

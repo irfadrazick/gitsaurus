@@ -99,3 +99,11 @@ export function stashMenu(_c: MenuContext): MenuItem[] {
     { id: 'stashDrop', label: 'Delete', danger: true },
   ];
 }
+
+/** Menu for a remote-tracking branch row. */
+export function remoteBranchMenu(c: MenuContext): MenuItem[] {
+  return [
+    { id: 'checkout', label: `Checkout ${c.name}` },
+    { id: 'copyBranchName', label: 'Copy branch name', separatorBefore: true },
+  ];
+}

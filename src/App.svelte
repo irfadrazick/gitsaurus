@@ -3,9 +3,13 @@
   import { onMount, untrack } from 'svelte';
   import * as api from './lib/api';
   import Columns from './lib/components/layout/Columns.svelte';
+  import ContextMenu from './lib/components/layout/ContextMenu.svelte';
   import Modal from './lib/components/layout/Modal.svelte';
   import Toasts from './lib/components/layout/Toasts.svelte';
+  import RefsColumn from './lib/components/refs/RefsColumn.svelte';
+  import RepoColumn from './lib/components/repos/RepoColumn.svelte';
   import { repo } from './lib/state/repo.svelte';
+  import { health } from './lib/state/repoHealth.svelte';
   import { openRepoDialog } from './lib/state/repos';
   import { session } from './lib/state/session.svelte';
   import { settings } from './lib/state/settings.svelte';
@@ -24,13 +28,34 @@
     })
       .then((u) => (unlisten = u))
       .catch(() => {});
-    return () => unlisten?.();
+    const onFocus = () => health.checkAll([...session.openRepos]);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      unlisten?.();
+      window.removeEventListener('focus', onFocus);
+    };
+  });
+
+  // Dirty dots / missing state for every open repo: check new ones, drop closed ones.
+  $effect(() => {
+    if (!session.loaded) return;
+    const paths = [...session.openRepos];
+    untrack(() => {
+      for (const p of [...health.dirty.keys(), ...health.missing]) if (!paths.includes(p)) health.forget(p);
+      for (const p of paths) if (!health.dirty.has(p) && !health.missing.has(p)) health.check(p);
+    });
+  });
+
+  // The selected repo's loaded state is the freshest source for its own dot.
+  $effect(() => {
+    if (repo.path && !repo.loading) health.setCount(repo.path, repo.state.files.length);
   });
 
   // Follow the selected repo: load it and watch it for changes.
   $effect(() => {
-    const path = session.selected;
+    const selected = session.selected;
     if (!session.loaded) return;
+    const path = selected && !health.missing.has(selected) ? selected : null;
     untrack(() => repo.open(path));
     if (!path) return;
     api.watchRepo(path).catch(() => {});
@@ -66,10 +91,10 @@
 <main>
   <Columns>
     {#snippet repos()}
-      <div class="ph">{session.reposCollapsed ? '' : 'Repositories'}</div>
+      <RepoColumn />
     {/snippet}
     {#snippet refs()}
-      <div class="ph">Branches</div>
+      <RefsColumn />
     {/snippet}
     {#snippet centre()}
       <div class="ph">{repo.path ?? 'Open a repository with ⌘O'}</div>
@@ -81,6 +106,7 @@
 </main>
 <Modal />
 <Toasts />
+<ContextMenu />
 
 <style>
   main {
