@@ -48,6 +48,21 @@ export function remoteOfUpstream(upstream: string, remotes: string[]): string | 
   return best;
 }
 
+/**
+ * The remote whose copy of local branch `name` a delete may also remove: only when the
+ * upstream is `<remote>/<name>` and still exists there (a gone upstream has nothing to delete).
+ */
+export function remoteCopyToDelete(
+  name: string,
+  upstream: string | null | undefined,
+  remotes: string[],
+  remoteBranches: string[],
+): string | null {
+  if (!upstream || !remoteBranches.includes(upstream)) return null;
+  const r = remoteOfUpstream(upstream, remotes);
+  return r && upstream === `${r}/${name}` ? r : null;
+}
+
 /** `git branch -d` refused because the branch is not merged. */
 export function isNotMerged(e: unknown): boolean {
   const err = e as Partial<GitError> | null;

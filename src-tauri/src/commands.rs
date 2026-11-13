@@ -226,6 +226,14 @@ pub async fn discard(
 }
 
 #[tauri::command]
+pub async fn discard_all_unstaged(state: State<'_, AppState>, repo: String) -> GitResult<()> {
+    write(state.inner(), repo, move |git| {
+        worktree::discard_all_unstaged(&git)
+    })
+    .await
+}
+
+#[tauri::command]
 pub async fn commit(
     state: State<'_, AppState>,
     repo: String,

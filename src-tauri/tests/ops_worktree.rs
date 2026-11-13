@@ -1,7 +1,8 @@
 mod common;
 use common::TestRepo;
 use gitsaurus_lib::git::ops::worktree::{
-    commit, discard, last_commit_message, stage, stage_all, unstage, unstage_all,
+    commit, discard, discard_all_unstaged, last_commit_message, stage, stage_all, unstage,
+    unstage_all,
 };
 use gitsaurus_lib::git::{Git, GitError, repo_state};
 
@@ -180,4 +181,47 @@ fn stage_with_glob_chars_stages_only_named_file() {
     assert_eq!(status_of(&g, "f1.txt").unwrap().0, ".");
     unstage(&g, &s(&["f[1].txt"])).unwrap();
     assert_eq!(status_of(&g, "f[1].txt").unwrap().0, ".");
+}
+
+#[test]
+fn discard_all_unstaged_keeps_staged_and_ignored_work() {
+    let r = TestRepo::new();
+    r.write(".gitignore", "build/\n");
+    r.write("a.txt", "a\n");
+    r.write("b.txt", "b\n");
+    r.write("c[1].txt", "c\n");
+    r.write("gone.txt", "g\n");
+    r.commit_all("init");
+    let g = Git::new(r.path());
+
+    // b: staged edit plus a further unstaged edit; a, c[1]: unstaged edits; gone: deleted.
+    r.write("b.txt", "b staged\n");
+    stage(&g, &s(&["b.txt"])).unwrap();
+    r.write("b.txt", "b staged then more\n");
+    r.write("a.txt", "a changed\n");
+    r.write("c[1].txt", "c changed\n");
+    std::fs::remove_file(r.path().join("gone.txt")).unwrap();
+    r.write("new/deep/n.txt", "n\n");
+    r.write("build/out.bin", "x\n");
+
+    discard_all_unstaged(&g).unwrap();
+
+    let read = |p: &str| std::fs::read_to_string(r.path().join(p)).unwrap();
+    assert_eq!(read("a.txt"), "a\n");
+    assert_eq!(read("c[1].txt"), "c\n");
+    assert_eq!(read("gone.txt"), "g\n");
+    // The staged version survives; only the unstaged edit on top is gone.
+    assert_eq!(read("b.txt"), "b staged\n");
+    assert_eq!(status_of(&g, "b.txt").unwrap(), ("M".into(), ".".into()));
+    assert!(!r.path().join("new").exists());
+    assert!(r.path().join("build/out.bin").exists());
+}
+
+#[test]
+fn discard_all_unstaged_on_a_clean_tree_is_a_no_op() {
+    let r = TestRepo::new();
+    r.write("a.txt", "a\n");
+    r.commit_all("init");
+    discard_all_unstaged(&Git::new(r.path())).unwrap();
+    assert!(r.path().join("a.txt").exists());
 }
