@@ -27,7 +27,12 @@
   const remoteCount = $derived(remoteGroups.reduce((n, g) => n + g.branches.length, 0));
   const tags = $derived(refs.tags.filter((t) => match(t.name)));
   const stashes = $derived(refs.stashes.filter((s) => match(s.message)));
-  const worktrees = $derived(refs.worktrees.filter((w) => match(worktreeLabel(w)) || match(w.name)));
+  // Only the main worktree means none were added: the section would just repeat Local.
+  const worktrees = $derived(
+    refs.worktrees.length > 1 ? refs.worktrees.filter((w) => match(worktreeLabel(w)) || match(w.name)) : [],
+  );
+  // With one remote, its name is a redundant level: list its branches straight under Remote.
+  const groupRemotes = $derived(refs.remotes.length > 1);
   const elsewhere = $derived(checkedOutElsewhere(refs.worktrees));
 
   const selectedOid = $derived(repo.selection?.kind === 'commit' ? repo.selection.oid : null);
@@ -125,10 +130,10 @@
         {@render header('remote', 'Remote', remoteCount, 'cloud')}
         {#if open('remote')}
           {#each remoteGroups as g (g.remote)}
-            <div class="remote-name">{g.remote}</div>
+            {#if groupRemotes}<div class="remote-name">{g.remote}</div>{/if}
             {#each g.branches as b (b.fullName)}
               <div
-                class="row indent"
+                class="row"
                 class:selected={selectedOid === b.oid}
                 role="button"
                 tabindex="0"
@@ -137,6 +142,7 @@
                 onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(b.oid)}
                 oncontextmenu={(e) => show(e, remoteCtx(b), remoteBranchMenu)}
               >
+                <span class="check"></span>
                 <span class="name">{b.name}</span>
               </div>
             {/each}
@@ -185,7 +191,7 @@
         {/if}
       {/if}
 
-      {#if !q || worktrees.length}
+      {#if worktrees.length}
         {@render header('worktrees', 'Worktrees', worktrees.length, 'folder')}
         {#if open('worktrees')}
           {#each worktrees as w (w.path)}
@@ -316,9 +322,6 @@
     padding: 0 8px;
     border-radius: 0;
     cursor: default;
-  }
-  .row.indent {
-    padding-left: 18px;
   }
   .row:hover {
     background: var(--hover);

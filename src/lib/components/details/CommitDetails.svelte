@@ -6,7 +6,7 @@
   import { changeSummary } from '../../util/changes';
   import { formatDate } from '../../util/date';
   import { displayBody } from '../../util/message';
-  import { palette } from '../../util/graphGeometry';
+  import { personColor } from '../../util/avatar';
   import Avatar from '../graph/Avatar.svelte';
   import FileList from './FileList.svelte';
 
@@ -34,11 +34,6 @@
   });
 
   const short = (s: string) => s.slice(0, 7);
-  const colorOf = (email: string) => {
-    let h = 0;
-    for (const c of email) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-    return palette[h % palette.length];
-  };
   const committerDiffers = $derived(
     !!details &&
       (details.author.name !== details.committer.name ||
@@ -56,7 +51,7 @@
 
 {#snippet person(label: string, p: Person)}
   <div class="person">
-    <Avatar email={p.email} name={p.name} size={24} color={colorOf(p.email)} />
+    <Avatar email={p.email} name={p.name} size={24} color={personColor(p.email)} />
     <div class="who">
       <span class="name" title={p.email}>{p.name}</span>
       <span class="muted small">{label} {formatDate(p.time)}</span>
@@ -91,15 +86,14 @@
           <div class="co">
             <span class="muted small">Co-authors</span>
             {#each details.coAuthors as c (c.email + c.name)}
-              <Avatar email={c.email} name={c.name} size={20} color={colorOf(c.email)} />
+              <Avatar email={c.email} name={c.name} size={20} color={personColor(c.email)} />
             {/each}
           </div>
         {/if}
       </div>
-      <div class="muted small count">{changeSummary(details.files) || 'No changed files'}</div>
     </div>
     <div class="files">
-      <FileList files={details.files} onOpen={open} selected={selectedPath} />
+      <FileList files={details.files} onOpen={open} selected={selectedPath} summary={changeSummary(details.files) || 'No changed files'} />
     </div>
   {/if}
 </div>

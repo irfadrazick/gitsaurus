@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GraphCommit } from '../../types';
+  import { formatDate } from '../../util/date';
   import { laneColor } from '../../util/graphGeometry';
   import { rowPills } from '../../util/refs';
   import GraphCell from './GraphCell.svelte';
@@ -14,7 +15,7 @@
     selected = false,
     match = false,
     current = false,
-    marker = null,
+    age = '',
     headIndex = null,
     hasWip = false,
   }: {
@@ -28,8 +29,8 @@
     /** Search hit / the current search hit. */
     match?: boolean;
     current?: boolean;
-    /** Relative-time chip text, when this row starts a new age bucket. */
-    marker?: string | null;
+    /** Compact author age shown at the right edge, e.g. "10h". */
+    age?: string;
     /** HEAD's graph index and whether a WIP row is shown: GraphCell styles the seed segments (R8). */
     headIndex?: number | null;
     hasWip?: boolean;
@@ -71,7 +72,7 @@
     <div class="msg">
       {#if pills.length}<RefPills pills={pills} color={laneColor(color)} />{/if}
       <span class="text"><span class="summary">{commit.summary}</span>{#if commit.bodyPreview}<span class="body">{commit.bodyPreview}</span>{/if}</span>
-      {#if marker}<span class="marker">{marker}</span>{/if}
+      <span class="age" title={formatDate(commit.authorTime)}>{age}</span>
     </div>
   </div>
 {:else}
@@ -124,7 +125,7 @@
     font-size: var(--fs-sm);
   }
   .row.selected .body,
-  .row.selected .marker {
+  .row.selected .age {
     color: var(--sel-muted);
   }
   .wiplabel {
@@ -138,14 +139,14 @@
     color: var(--text);
     font-size: var(--fs-md);
   }
-  .marker {
+  /* A fixed right-hand column, so ages line up down the list. */
+  .age {
     flex: none;
-    padding: 0 7px;
-    border-radius: var(--radius-xs);
-    background: var(--chip);
-    color: var(--chip-text);
+    width: 30px;
+    color: var(--muted);
     font-size: var(--fs-xs);
-    line-height: 18px;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
     white-space: nowrap;
   }
   /* Search hits: an amber edge on the message cell; the current hit is stronger. */
