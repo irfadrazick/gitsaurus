@@ -12,7 +12,7 @@
   } from '../../util/graphGeometry';
   import { branchMenu, commitMenu, remoteBranchMenu, tagMenu, type MenuItem } from '../../util/menus';
   import { rowPills } from '../../util/refs';
-  import { showMarker, timeBucket } from '../../util/time';
+  import { shortAge } from '../../util/time';
   import GraphRow from './GraphRow.svelte';
   import SearchBar from './SearchBar.svelte';
 
@@ -50,19 +50,12 @@
     });
   });
 
-  // --- time markers ---------------------------------------------------------------------------
+  // --- row ages: re-rendered once a minute so "now" and "5m" stay true -------------------------
   let now = $state(Math.floor(Date.now() / 1000));
   onMount(() => {
     const t = setInterval(() => (now = Math.floor(Date.now() / 1000)), 60_000);
     return () => clearInterval(t);
   });
-
-  function markerFor(i: number, c: GraphCommit): string | null {
-    const prev = i > 0 ? repo.commitAt(i - 1) : undefined;
-    // Previous row not loaded yet: wait for it instead of flashing a marker.
-    if (i > 0 && !prev) return null;
-    return showMarker(prev?.authorTime, c.authorTime, now) ? timeBucket(c.authorTime, now) : null;
-  }
 
   // --- selection ------------------------------------------------------------------------------
   const selectedOid = $derived(repo.selection?.kind === 'commit' ? repo.selection.oid : null);
@@ -327,7 +320,7 @@
             selected={!!c && c.oid === selectedOid}
             match={matchSet.has(i)}
             current={i === currentMatch}
-            marker={c ? markerFor(i, c) : null}
+            age={c ? shortAge(c.authorTime, now) : ''}
             headIndex={repo.summary.headIndex}
             hasWip={hasWip}
           />

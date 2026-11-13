@@ -14,6 +14,7 @@
     actions,
     onContext,
     bare = false,
+    summary = '',
   }: {
     files: WipFile[];
     onOpen: (file: ChangedFile) => void;
@@ -25,6 +26,8 @@
     onContext?: (file: ChangedFile, e: MouseEvent) => void;
     /** Embedded in a scrolling parent: no count/layout bar, no own scrolling. */
     bare?: boolean;
+    /** Replaces the "N files" count in the bar, e.g. "3 modified · 1 added". */
+    summary?: string;
   } = $props();
 
   const tree = $derived(buildTree(files));
@@ -83,7 +86,7 @@
 
 <div class="filelist" class:bare>
   {#if !bare}<div class="bar">
-    <span class="count muted small">{files.length} {files.length === 1 ? 'file' : 'files'}</span>
+    <span class="count muted small">{summary || `${files.length} ${files.length === 1 ? 'file' : 'files'}`}</span>
     <div class="seg" role="group" aria-label="File list layout">
       <button type="button" class:on={session.fileListMode === 'path'} aria-pressed={session.fileListMode === 'path'} onclick={() => (session.fileListMode = 'path')}>Path</button>
       <button type="button" class:on={session.fileListMode === 'tree'} aria-pressed={session.fileListMode === 'tree'} onclick={() => (session.fileListMode = 'tree')}>Tree</button>
