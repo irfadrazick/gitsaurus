@@ -5,7 +5,7 @@ export type MenuKind = 'branch' | 'remoteBranch' | 'commit' | 'tag' | 'stash';
 export type ActionKey =
   | 'pull' | 'push' | 'setUpstream' | 'merge' | 'rebase'
   | 'checkoutBranch' | 'checkoutCommit' | 'checkoutTag' | 'checkoutRemote'
-  | 'createBranch' | 'cherryPick' | 'revert' | 'rename' | 'deleteBranch' | 'deleteTag'
+  | 'createBranch' | 'cherryPick' | 'revert' | 'rename' | 'deleteBranch' | 'deleteRemoteBranch' | 'deleteTag'
   | 'resetSoft' | 'resetMixed' | 'resetHard'
   | 'copyBranchName' | 'copySha' | 'copyTagName' | 'createTag' | 'createAnnotatedTag' | 'pushTag'
   | 'stashApply' | 'stashPop' | 'stashDrop';
@@ -23,7 +23,7 @@ const TABLE: Record<MenuKind, Record<string, ActionKey>> = {
     pull: 'pull', push: 'push', setUpstream: 'setUpstream', merge: 'merge', rebase: 'rebase',
     checkout: 'checkoutBranch', rename: 'rename', delete: 'deleteBranch', copyBranchName: 'copyBranchName',
   },
-  remoteBranch: { checkout: 'checkoutRemote', copyBranchName: 'copyBranchName' },
+  remoteBranch: { checkout: 'checkoutRemote', copyBranchName: 'copyBranchName', delete: 'deleteRemoteBranch' },
   commit: { ...common, checkout: 'checkoutCommit' },
   tag: { checkout: 'checkoutTag', pushTag: 'pushTag', delete: 'deleteTag', copyTagName: 'copyTagName' },
   stash: { stashApply: 'stashApply', stashPop: 'stashPop', stashDrop: 'stashDrop' },

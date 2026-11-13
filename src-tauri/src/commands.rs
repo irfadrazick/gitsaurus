@@ -306,6 +306,18 @@ pub async fn delete_branch(
 }
 
 #[tauri::command]
+pub async fn delete_remote_branch(
+    state: State<'_, AppState>,
+    repo: String,
+    name: String,
+) -> GitResult<()> {
+    write(state.inner(), repo, move |git| {
+        branch::delete_remote_branch(&git, &name)
+    })
+    .await
+}
+
+#[tauri::command]
 pub async fn validate_branch_name(repo: String, name: String) -> GitResult<()> {
     read(repo, move |git| branch::validate_ref_name(&git, &name)).await
 }

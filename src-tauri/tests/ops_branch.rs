@@ -109,6 +109,33 @@ fn delete_branch_also_on_remote() {
 }
 
 #[test]
+fn delete_remote_branch_removes_it_there_and_keeps_the_local_one() {
+    let (bare, a) = setup();
+    let g = Git::new(a.path());
+    create_branch(&g, "feat/x", "main", false).unwrap();
+    a.git(&["push", "-u", "origin", "feat/x"]);
+    delete_remote_branch(&g, "origin/feat/x").unwrap();
+    assert!(bare.git(&["for-each-ref", "refs/heads/feat/x"]).is_empty());
+    // The remote-tracking ref goes too; the local branch stays and shows as gone.
+    assert!(
+        a.git(&["for-each-ref", "refs/remotes/origin/feat/x"])
+            .is_empty()
+    );
+    let refs = list_refs(&g).unwrap();
+    let local = refs.local.iter().find(|b| b.name == "feat/x").unwrap();
+    assert!(local.gone);
+}
+
+#[test]
+fn delete_remote_branch_refuses_unknown_remotes_and_options() {
+    let (_bare, a) = setup();
+    let g = Git::new(a.path());
+    assert!(delete_remote_branch(&g, "nowhere/main").is_err());
+    assert!(delete_remote_branch(&g, "--all").is_err());
+    assert!(delete_remote_branch(&g, "origin/-x").is_err());
+}
+
+#[test]
 fn invalid_branch_name_rejected() {
     let (_b, a) = setup();
     let g = Git::new(a.path());

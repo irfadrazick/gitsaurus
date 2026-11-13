@@ -42,6 +42,7 @@ export const renameBranch = (repo: string, old: string, newName: string) =>
   invoke<void>('rename_branch', { repo, old, new: newName });
 export const deleteBranch = (repo: string, name: string, force: boolean, remote?: string) =>
   invoke<void>('delete_branch', { repo, name, force, remote });
+export const deleteRemoteBranch = (repo: string, name: string) => invoke<void>('delete_remote_branch', { repo, name });
 export const validateBranchName = (repo: string, name: string) => invoke<void>('validate_branch_name', { repo, name });
 export const validateTagName = (repo: string, name: string) => invoke<void>('validate_tag_name', { repo, name });
 export const createTag = (repo: string, name: string, at: string, message?: string) =>

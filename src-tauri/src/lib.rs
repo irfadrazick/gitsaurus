@@ -46,6 +46,7 @@ pub fn run() {
             commands::create_branch,
             commands::rename_branch,
             commands::delete_branch,
+            commands::delete_remote_branch,
             commands::validate_branch_name,
             commands::validate_tag_name,
             commands::create_tag,

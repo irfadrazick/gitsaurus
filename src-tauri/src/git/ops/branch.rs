@@ -117,10 +117,31 @@ pub fn delete_branch(git: &Git, name: &str, force: bool, remote: Option<&str>) -
         name,
     ])?;
     if let Some(r) = remote {
-        // Bounded: started from a menu, so there is no Cancel button for it.
-        git.run_network_bounded(&["push", r, "--delete", "--end-of-options", name])?;
+        push_delete(git, r, name)?;
     }
     Ok(())
+}
+
+/// `git push <remote> --delete <name>`; on success git also drops `<remote>/<name>` locally.
+fn push_delete(git: &Git, remote: &str, name: &str) -> GitResult<()> {
+    // Bounded: started from a menu, so there is no Cancel button for it.
+    git.run_network_bounded(&["push", remote, "--delete", "--end-of-options", name])
+        .map(|_| ())
+}
+
+/// Deletes a branch on its remote, given as a remote-tracking name like `origin/feat/x`.
+/// Local branches are left alone; one that tracked it shows as gone.
+pub fn delete_remote_branch(git: &Git, full_name: &str) -> GitResult<()> {
+    safe_target(full_name)?;
+    let remotes: Vec<String> = git
+        .run_read(&["remote"])?
+        .lines()
+        .map(str::to_string)
+        .filter(|l| !l.is_empty())
+        .collect();
+    let (remote, name) = split_remote(&remotes, full_name).ok_or_else(|| failed("Invalid ref"))?;
+    safe_target(name)?;
+    push_delete(git, remote, name)
 }
 
 pub fn create_tag(git: &Git, name: &str, at: &str, message: Option<&str>) -> GitResult<()> {
