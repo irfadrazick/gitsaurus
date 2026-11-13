@@ -151,6 +151,23 @@ async function deleteBranch(c: ActionContext) {
   if (force) await runOp('Delete branch', () => api.deleteBranch(c.repo, c.name, true, remote));
 }
 
+/** Deletes a branch on its remote (the menu on a Remote row); local branches are kept. */
+async function deleteRemoteBranch(c: ActionContext) {
+  const rb = repo.refs.remote.find((b) => b.fullName === c.name);
+  if (!rb) return;
+  const tracking = repo.refs.local.filter((b) => b.upstream === rb.fullName).map((b) => b.name);
+  const keep = tracking.length
+    ? ` Your local ${tracking.length === 1 ? 'branch' : 'branches'} ${tracking.join(', ')} ${tracking.length === 1 ? 'is' : 'are'} kept and will show as gone.`
+    : '';
+  const ok = await confirm({
+    title: `Delete ${rb.name} on ${rb.remote}?`,
+    body: `This runs git push ${rb.remote} --delete ${rb.name}, removing it for everyone who uses ${rb.remote}.${keep}`,
+    danger: true,
+    confirmLabel: 'Delete on remote',
+  });
+  if (ok) await runOp('Delete remote branch', () => api.deleteRemoteBranch(c.repo, c.name));
+}
+
 async function push(c: ActionContext) {
   await runOp('Push', () => api.push(c.repo, c.name, false), {
     onPushRejected: async () => {
@@ -273,6 +290,7 @@ export async function performMenuAction(id: string, ctx: ActionContext): Promise
     }
     case 'rename': return rename(ctx);
     case 'deleteBranch': return deleteBranch(ctx);
+    case 'deleteRemoteBranch': return deleteRemoteBranch(ctx);
     case 'deleteTag': {
       const ok = await confirm({ title: `Delete tag ${name}?`, body: `The local tag ${name} will be deleted.`, danger: true, confirmLabel: 'Delete' });
       if (!ok) return;

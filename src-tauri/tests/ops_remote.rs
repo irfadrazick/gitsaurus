@@ -205,3 +205,24 @@ fn push_tag_and_set_upstream() {
     );
     assert!(set_upstream(&g, "-bad", "origin/main").is_err());
 }
+
+#[test]
+fn pull_drops_remote_branches_deleted_on_the_remote() {
+    let (_r, a, b) = setup();
+    a.git(&["push", "origin", "main:old"]);
+    b.git(&["fetch", "origin"]);
+    assert!(
+        !b.git(&["for-each-ref", "refs/remotes/origin/old"])
+            .is_empty()
+    );
+    a.git(&["push", "origin", "--delete", "old"]);
+    for mode in [PullMode::FfOnly, PullMode::Default, PullMode::Rebase] {
+        b.git(&["update-ref", "refs/remotes/origin/old", "HEAD"]);
+        pull(&Git::new(b.path()), mode).unwrap();
+        assert!(
+            b.git(&["for-each-ref", "refs/remotes/origin/old"])
+                .is_empty(),
+            "{mode:?}"
+        );
+    }
+}

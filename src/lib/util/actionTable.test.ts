@@ -26,6 +26,7 @@ it('same id means different actions per menu kind', () => {
   expect(actionFor('remoteBranch', 'checkout')).toBe('checkoutRemote');
   expect(actionFor('branch', 'delete')).toBe('deleteBranch');
   expect(actionFor('tag', 'delete')).toBe('deleteTag');
+  expect(actionFor('remoteBranch', 'delete')).toBe('deleteRemoteBranch');
   expect(actionFor('commit', 'nope')).toBeNull();
 });
 

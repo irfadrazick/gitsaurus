@@ -55,16 +55,17 @@ fn config_is_set(git: &Git, key: &str) -> GitResult<bool> {
 
 pub fn pull(git: &Git, mode: PullMode) -> GitResult<OpOutcome> {
     let args: Vec<&str> = match mode {
-        PullMode::FfOnly => vec!["pull", "--ff-only"],
-        PullMode::Rebase => vec!["pull", "--rebase"],
+        PullMode::FfOnly => vec!["pull", "--prune", "--ff-only"],
+        PullMode::Rebase => vec!["pull", "--prune", "--rebase"],
         PullMode::Default => {
             if config_is_set(git, "pull.rebase")? || config_is_set(git, "pull.ff")? {
-                vec!["pull"]
+                vec!["pull", "--prune"]
             } else {
-                vec!["pull", "--no-rebase"]
+                vec!["pull", "--prune", "--no-rebase"]
             }
         }
     };
+    // --prune: like Fetch, drop remote-tracking branches deleted on the remote.
     let res = git.run_network(&args);
     conflict_outcome(git, res)
 }

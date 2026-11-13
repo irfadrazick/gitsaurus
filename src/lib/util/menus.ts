@@ -107,6 +107,7 @@ export function remoteBranchMenu(c: MenuContext): MenuItem[] {
   return [
     { id: 'checkout', label: `Checkout ${c.name}` },
     { id: 'copyBranchName', label: 'Copy branch name', separatorBefore: true },
+    { id: 'delete', label: 'Delete on remote…', danger: true, separatorBefore: true },
   ];
 }
 

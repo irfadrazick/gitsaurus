@@ -13,7 +13,7 @@ A minimal, fast git client for macOS. It shows your history as a lane graph and 
 - Merge, rebase, cherry-pick, revert and reset, with a conflict resolver
 - Toolbar: Pull (fetch, fast-forward, fast-forward only, rebase), Push, Branch, Stash, Pop, Search
 - Force push only ever uses `--force-with-lease`, and only after you confirm
-- Background fetch on an interval you choose
+- Background fetch on an interval you choose. Fetch and Pull both drop branches deleted on the remote, and a remote branch can be deleted from its menu
 - Dark theme, no telemetry, no accounts. Network use is limited to your git remotes and optional avatar lookups (can be turned off in Settings, Cmd+,)
 
 ## Build
