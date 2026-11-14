@@ -84,6 +84,11 @@ export function pagesFor(start: number, end: number, pageSize: number): number[]
   return pages;
 }
 
+/** The pages of `pages` that still hold rows in a graph of `total` rows. */
+export function pagesWithin(pages: number[], total: number, pageSize: number): number[] {
+  return pages.filter((p) => p * pageSize < total);
+}
+
 const fullyVisible = (scrollTop: number, viewportH: number, rowTop: number, rowH: number) =>
   rowTop >= scrollTop && rowTop + rowH <= scrollTop + viewportH;
 

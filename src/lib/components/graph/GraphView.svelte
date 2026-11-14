@@ -45,9 +45,7 @@
   $effect(() => {
     const pages = pagesFor(start, end, PAGE_SIZE);
     void repo.graphVersion;
-    untrack(() => {
-      for (const p of pages) repo.loadPage(p);
-    });
+    untrack(() => repo.showPages(pages));
   });
 
   // --- row ages: re-rendered once a minute so "now" and "5m" stay true -------------------------

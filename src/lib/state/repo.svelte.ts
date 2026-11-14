@@ -1,6 +1,7 @@
 import { SvelteMap } from 'svelte/reactivity';
 import * as api from '../api';
 import type { ChangeKind, GraphCommit, GraphSummary, Refs, RepoState } from '../types';
+import { pagesWithin } from '../util/graphGeometry';
 import { leavesConflictView } from '../util/liveDiff';
 import { toasts } from './toasts.svelte';
 
@@ -47,6 +48,9 @@ class RepoStore {
 
   #token = 0;
   #inflight = new Set<number>();
+  /** Pages the graph view shows; a reload re-fetches these before swapping, so the rows never go blank. */
+  #shown: number[] = [];
+  #reloadSeq = 0;
 
   /** Switch to `path` (null clears) and load refs, state and graph summary. */
   async open(path: string | null) {
@@ -54,6 +58,7 @@ class RepoStore {
     this.path = path;
     this.pages.clear();
     this.#inflight.clear();
+    this.#shown = [];
     this.selection = null;
     this.centre = { kind: 'graph' };
     this.refs = emptyRefs();
@@ -107,17 +112,38 @@ class RepoStore {
     this.stateVersion++;
   }
 
-  /** Reload the graph summary and drop cached pages; the selection (by oid) is kept. */
+  /**
+   * Reload the graph summary and pages; the selection (by oid) is kept. The old rows stay on screen
+   * until the new summary and the pages in view have arrived, then everything swaps at once.
+   */
   async reloadGraph() {
     const path = this.path;
     if (!path) return;
     const token = this.#token;
+    const seq = ++this.#reloadSeq;
+    const current = () => token === this.#token && seq === this.#reloadSeq;
     const summary = await api.loadGraph(path);
-    if (token !== this.#token) return;
+    if (!current()) return;
+    let fresh = new Map<number, GraphCommit[]>();
+    try {
+      const keep = pagesWithin(this.#shown, summary.total, PAGE_SIZE);
+      const rows = await Promise.all(keep.map((n) => api.graphPage(path, n * PAGE_SIZE, PAGE_SIZE)));
+      fresh = new Map(keep.map((n, i) => [n, rows[i]]));
+    } catch {
+      // The view loads (and reports) whatever is missing after the swap.
+    }
+    if (!current()) return;
     this.summary = summary;
     this.pages.clear();
     this.#inflight.clear();
+    for (const [n, rows] of fresh) this.pages.set(n, rows);
     this.graphVersion++;
+  }
+
+  /** Load the pages the graph view shows and remember them for the next reload. */
+  showPages(ns: number[]) {
+    this.#shown = ns;
+    for (const n of ns) this.loadPage(n);
   }
 
   /** Ensure page `n` is loaded. */

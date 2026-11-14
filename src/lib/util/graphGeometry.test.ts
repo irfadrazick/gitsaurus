@@ -6,6 +6,7 @@ import {
   laneColor,
   laneX,
   pagesFor,
+  pagesWithin,
   revealScrollTop,
   seedSegment,
   seedStyle,
@@ -77,6 +78,15 @@ describe('visibleRange', () => {
   it('handles negative scroll (rubber band) and empty lists', () => {
     expect(visibleRange(-50, 360, 36, 1000, 10)).toEqual({ start: 0, end: 20 });
     expect(visibleRange(0, 360, 36, 0, 10)).toEqual({ start: 0, end: 0 });
+  });
+});
+
+describe('pagesWithin', () => {
+  it('keeps the pages that still hold rows after a reload', () => {
+    expect(pagesWithin([0, 1], 450, 200)).toEqual([0, 1]);
+    expect(pagesWithin([2, 3], 450, 200)).toEqual([2]);
+    expect(pagesWithin([1], 200, 200)).toEqual([]);
+    expect(pagesWithin([0], 0, 200)).toEqual([]);
   });
 });
 
