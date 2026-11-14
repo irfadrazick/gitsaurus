@@ -6,7 +6,7 @@ import { pullPlan } from '../util/pull';
 import { forcePushWarning } from '../util/push';
 import { explainRefName } from '../util/refName';
 import { defaultRemote } from '../util/watchDiff';
-import { actionFor, defaultUpstream, isNotMerged, remoteOfUpstream, type MenuKind } from '../util/actionTable';
+import { actionFor, defaultUpstream, isNotMerged, remoteCopyToDelete, type MenuKind } from '../util/actionTable';
 import { choose, confirm, prompt } from './modal.svelte';
 import { runOp } from './ops';
 import { repo } from './repo.svelte';
@@ -120,20 +120,19 @@ async function deleteBranch(c: ActionContext) {
     confirmLabel: 'Delete',
   });
   if (!ok) return;
-  // R4: offer to delete the remote copy too, only when the upstream is <remote>/<same name>.
+  // R4: offer to delete the remote copy too, only when the upstream is <remote>/<same name>
+  // and still exists there.
   let remote: string | undefined;
   const upstream = repo.refs.local.find((b) => b.name === c.name)?.upstream;
-  if (upstream) {
-    const r = remoteOfUpstream(upstream, repo.refs.remotes);
-    if (r && upstream === `${r}/${c.name}`) {
-      const also = await confirm({
-        title: `Also delete ${upstream} on the remote?`,
-        body: `This runs git push ${r} --delete ${c.name}.`,
-        danger: true,
-        confirmLabel: 'Delete remote branch too',
-      });
-      if (also) remote = r;
-    }
+  const r = remoteCopyToDelete(c.name, upstream, repo.refs.remotes, repo.refs.remote.map((b) => b.fullName));
+  if (r && upstream) {
+    const also = await confirm({
+      title: `Also delete ${upstream} on the remote?`,
+      body: `This runs git push ${r} --delete ${c.name}.`,
+      danger: true,
+      confirmLabel: 'Delete remote branch too',
+    });
+    if (also) remote = r;
   }
   let notMerged = false;
   await runOp(

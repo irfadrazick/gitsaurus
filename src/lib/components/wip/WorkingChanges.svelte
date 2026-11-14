@@ -68,6 +68,25 @@
   }
   const unstageAll = () => runOp('Unstage all', () => api.unstageAll(repo.path!));
 
+  async function discardAll() {
+    const added = untracked.size;
+    const edited = unstaged.length - added;
+    const n = (k: number, what: string) => `${k} ${what}${k === 1 ? '' : 's'}`;
+    const parts = [
+      edited
+        ? `${n(edited, 'changed file')} ${edited === 1 ? 'goes back to its' : 'go back to their'} ${staged.length ? 'staged or last committed' : 'last committed'} version`
+        : '',
+      added ? `${n(added, 'untracked file')} ${added === 1 ? 'is' : 'are'} deleted` : '',
+    ].filter(Boolean);
+    const ok = await confirm({
+      title: 'Discard all unstaged changes?',
+      body: `${parts.join(' and ')}.${staged.length ? ' Staged changes are kept.' : ''} This cannot be undone.`,
+      danger: true,
+      confirmLabel: 'Discard all',
+    });
+    if (ok) await runOp('Discard all', () => api.discardAllUnstaged(repo.path!));
+  }
+
   function onContext(f: ChangedFile, e: MouseEvent) {
     openMenu(e.clientX, e.clientY, [{ id: 'discard', label: 'Discard changes', danger: true }], async () => {
       const isNew = untracked.has(f.path);
@@ -98,7 +117,10 @@
     <section>
       <header>
         <h3>Unstaged files ({unstaged.length})</h3>
-        <button type="button" disabled={unstaged.length === 0} onclick={stageAll} title="Stage all (⌘⇧S)">Stage all</button>
+        <span class="btns">
+          <button type="button" class="danger-quiet" disabled={unstaged.length === 0} onclick={discardAll} title="Discard all unstaged changes">Discard all…</button>
+          <button type="button" disabled={unstaged.length === 0} onclick={stageAll} title="Stage all (⌘⇧S)">Stage all</button>
+        </span>
       </header>
       {#if unstaged.length}
         <FileList bare files={unstaged} onOpen={openUnstaged} selected={selectedPath} {onContext}>
@@ -161,6 +183,10 @@
   header button {
     padding: 1px 8px;
     font-size: var(--fs-xs);
+  }
+  .btns {
+    display: flex;
+    gap: 4px;
   }
   section + section {
     margin-top: 6px;

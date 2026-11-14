@@ -8,7 +8,7 @@ A minimal, fast git client for macOS. It shows your history as a lane graph and 
 - Commit graph that stays smooth on large histories (tens of thousands of commits), with search
 - Branches, remotes, tags and stashes in a side column, each with a context menu
 - Worktrees listed beside them: open one as its own repo, show it in Finder, or remove it
-- Working changes: stage, unstage, discard, commit (with amend)
+- Working changes: stage, unstage, discard a file or all unstaged changes at once, commit (with amend)
 - Unified and split diffs with syntax highlighting
 - Merge, rebase, cherry-pick, revert and reset, with a conflict resolver
 - Toolbar: Pull (fetch, fast-forward, fast-forward only, rebase), Push, Branch, Stash, Pop, Search

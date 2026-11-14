@@ -40,6 +40,7 @@ pub fn run() {
             commands::unstage,
             commands::unstage_all,
             commands::discard,
+            commands::discard_all_unstaged,
             commands::commit,
             commands::checkout,
             commands::checkout_commit,

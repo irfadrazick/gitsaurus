@@ -59,6 +59,36 @@ pub fn discard(git: &Git, paths: &[String]) -> GitResult<()> {
     Ok(())
 }
 
+/// Discards every unstaged change: tracked files go back to their staged (or committed)
+/// content and untracked files are deleted. Staged changes, conflicted files and ignored
+/// files are left alone.
+pub fn discard_all_unstaged(git: &Git) -> GitResult<()> {
+    let state = repo_state(git)?;
+    let tracked: Vec<&str> = state
+        .files
+        .iter()
+        .filter(|f| !f.conflicted && !f.untracked && f.worktree != ".")
+        .map(|f| f.path.as_str())
+        .collect();
+    if !tracked.is_empty() {
+        // Paths on stdin: no argument-length limit however many files changed.
+        git.run_stdin(
+            &[
+                "restore",
+                "--worktree",
+                "--pathspec-from-file=-",
+                "--pathspec-file-nul",
+            ],
+            &tracked.join("\0"),
+        )?;
+    }
+    if state.files.iter().any(|f| f.untracked) {
+        // The repo root (git runs there); -d also removes folders left empty.
+        git.run(&["clean", "-f", "-d", "--", "."])?;
+    }
+    Ok(())
+}
+
 pub fn commit(git: &Git, summary: &str, description: &str, amend: bool) -> GitResult<()> {
     let summary = summary.trim();
     if summary.is_empty() {

@@ -30,6 +30,7 @@ export const stageAll = (repo: string) => invoke<void>('stage_all', { repo });
 export const unstage = (repo: string, paths: string[]) => invoke<void>('unstage', { repo, paths });
 export const unstageAll = (repo: string) => invoke<void>('unstage_all', { repo });
 export const discard = (repo: string, paths: string[]) => invoke<void>('discard', { repo, paths });
+export const discardAllUnstaged = (repo: string) => invoke<void>('discard_all_unstaged', { repo });
 export const commit = (repo: string, summary: string, description: string, amend: boolean) =>
   invoke<void>('commit', { repo, summary, description, amend });
 

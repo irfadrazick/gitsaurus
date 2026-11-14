@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { actionFor, defaultUpstream, isNotMerged, remoteOfUpstream } from './actionTable';
+import { actionFor, defaultUpstream, isNotMerged, remoteCopyToDelete, remoteOfUpstream } from './actionTable';
 import { branchMenu, commitMenu, remoteBranchMenu, stashMenu, tagMenu, type MenuContext, type MenuItem } from './menus';
 
 const ctx = (over: Partial<MenuContext> = {}): MenuContext => ({
@@ -47,4 +47,13 @@ it('isNotMerged detects the git message on failed errors only', () => {
   expect(isNotMerged({ kind: 'failed', message: 'x', stderr: 'other' })).toBe(false);
   expect(isNotMerged({ kind: 'pushRejected', message: 'x', stderr: 'not fully merged' })).toBe(false);
   expect(isNotMerged(null)).toBe(false);
+});
+
+it('remoteCopyToDelete offers only a same-name upstream that still exists', () => {
+  const remotes = ['origin'];
+  expect(remoteCopyToDelete('feat', 'origin/feat', remotes, ['origin/feat'])).toBe('origin');
+  // gone: the remote branch was already deleted
+  expect(remoteCopyToDelete('feat', 'origin/feat', remotes, ['origin/main'])).toBeNull();
+  expect(remoteCopyToDelete('feat', 'origin/other', remotes, ['origin/other'])).toBeNull();
+  expect(remoteCopyToDelete('feat', null, remotes, ['origin/feat'])).toBeNull();
 });
