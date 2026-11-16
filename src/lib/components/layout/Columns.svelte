@@ -56,7 +56,7 @@
 <style>
   .columns {
     display: grid;
-    height: 100%;
+    flex: 1;
     min-height: 0;
   }
   .col {

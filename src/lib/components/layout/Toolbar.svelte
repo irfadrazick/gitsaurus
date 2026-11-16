@@ -141,13 +141,14 @@
 {#snippet spinner()}<span class="spin" aria-hidden="true"></span>{/snippet}
 
 {#if path}
-  <header class="bar">
-    <div class="where">
-      <span class="repo">{name}</span>
+  <!-- The bar is the window's title bar: its empty parts and the name drag the window. -->
+  <header class="bar" data-tauri-drag-region>
+    <div class="where" data-tauri-drag-region>
+      <span class="repo" data-tauri-drag-region>{name}</span>
       {#if branch}
-        <span class="sep">/</span><span class="branch">{branch}</span>
+        <span class="sep" data-tauri-drag-region>/</span><span class="branch" data-tauri-drag-region>{branch}</span>
       {:else}
-        <span class="sep">/</span><span class="branch mono">{oid?.slice(0, 7) ?? ''}</span><span class="detached">detached</span>
+        <span class="sep" data-tauri-drag-region>/</span><span class="branch mono" data-tauri-drag-region>{oid?.slice(0, 7) ?? ''}</span><span class="detached" data-tauri-drag-region>detached</span>
       {/if}
       {#if bg.fetching === path}<span class="fetching" role="status">Fetching…</span>{/if}
     </div>
@@ -194,20 +195,24 @@
 {/if}
 
 <style>
+  /* Repository and branch on the left; the buttons centred in the window (the empty third column
+     balances the first, so they stay centred whatever the name's length). */
   .bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
-    padding: 6px 10px;
+    /* The left inset leaves room for the window's close, minimise and zoom buttons. */
+    padding: 6px 10px 6px var(--traffic-lights-w);
     border-bottom: 1px solid var(--line);
     background: var(--panel);
-    min-height: 52px;
+    min-height: var(--titlebar-h);
   }
   .where {
     display: flex;
     align-items: baseline;
     gap: 6px;
+    font-size: var(--fs-title);
     min-width: 0;
     overflow: hidden;
     white-space: nowrap;
