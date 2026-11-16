@@ -31,7 +31,10 @@
 .diff .code {
   flex: 1;
   white-space: pre;
+  padding-left: 6px;
   padding-right: 16px;
+  /* One thin rule separates the line numbers from the code, on every line and in either view. */
+  border-left: 1px solid color-mix(in srgb, var(--text) 14%, transparent);
 }
 .diff .nonl {
   color: var(--muted);
@@ -45,15 +48,6 @@
 .diff .half.del {
   /* Red reads stronger than green at the same strength, so it gets a lighter tint. */
   background: color-mix(in srgb, var(--del) 18%, transparent);
-}
-/* A stronger tint on the line numbers and +/- marks gives changed lines a clear left edge. */
-.diff .add .gutter,
-.diff .add .mark {
-  background: color-mix(in srgb, var(--add) 22%, transparent);
-}
-.diff .del .gutter,
-.diff .del .mark {
-  background: color-mix(in srgb, var(--del) 14%, transparent);
 }
 .diff .line.cmark,
 .diff .half.cmark {
