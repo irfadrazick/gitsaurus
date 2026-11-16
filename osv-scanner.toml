@@ -1,0 +1,32 @@
+# Known advisories that don't affect Gitsaurus, with the reason for each. Read by OSV-Scanner and the
+# OpenSSF Scorecard Vulnerabilities check. Gitsaurus ships for macOS only; cargo-deny (src-tauri/deny.toml)
+# checks every advisory against the crates actually built for aarch64- and x86_64-apple-darwin.
+
+# Linux-only crates from Tauri's GTK and D-Bus stacks. `cargo tree --target aarch64-apple-darwin -i <crate>`
+# finds none of them; revisit if Gitsaurus ever ships for Linux.
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0429"
+reason = "glib (unsound VariantStrIter): GTK dependency, not built for macOS"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2024-0370"
+reason = "proc-macro-error (unmaintained): GTK dependency, not built for macOS"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0370"
+reason = "zvariant (unmaintained): D-Bus dependency, not built for macOS"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0371"
+reason = "zbus_names (unmaintained): D-Bus dependency, not built for macOS"
+
+[[IgnoredVulns]]
+id = "RUSTSEC-2026-0372"
+reason = "zvariant_derive (unmaintained): D-Bus dependency, not built for macOS"
+
+# Build tool only (via @sveltejs/vite-plugin-svelte), never shipped in the app, and no fixed version is
+# published yet. Review again when this expires.
+[[IgnoredVulns]]
+id = "GHSA-gcqx-w48m-w2h4"
+ignoreUntil = 2027-02-16
+reason = "deepmerge prototype poisoning: dev-only build dependency, low severity, no fix released"
