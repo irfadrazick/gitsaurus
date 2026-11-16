@@ -87,7 +87,7 @@
   .row {
     display: grid;
     grid-template-columns: var(--graph-w) minmax(0, 1fr);
-    height: 36px;
+    height: 32px; /* ROW_H in graphGeometry.ts */
     cursor: default;
   }
   .row:hover {

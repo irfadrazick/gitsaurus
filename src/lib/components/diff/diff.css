@@ -43,7 +43,8 @@
 }
 .diff .line.del,
 .diff .half.del {
-  background: color-mix(in srgb, var(--del) 24%, transparent);
+  /* Red reads stronger than green at the same strength, so it gets a lighter tint. */
+  background: color-mix(in srgb, var(--del) 18%, transparent);
 }
 /* A stronger tint on the line numbers and +/- marks gives changed lines a clear left edge. */
 .diff .add .gutter,
@@ -52,7 +53,7 @@
 }
 .diff .del .gutter,
 .diff .del .mark {
-  background: color-mix(in srgb, var(--del) 22%, transparent);
+  background: color-mix(in srgb, var(--del) 14%, transparent);
 }
 .diff .line.cmark,
 .diff .half.cmark {

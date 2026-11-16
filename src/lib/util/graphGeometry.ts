@@ -1,6 +1,6 @@
 // Pure geometry for the commit graph (spec §6.2). Components stay thin and draw what these return.
 
-export const ROW_H = 36;
+export const ROW_H = 32;
 export const LANE_W = 22;
 export const LANE_X0 = 14;
 export const NODE_R = 11;

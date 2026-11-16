@@ -42,23 +42,23 @@ describe('lane geometry', () => {
 
 describe('segmentPath', () => {
   it('pass runs straight through the row', () => {
-    expect(segmentPath('pass', 2, 0)).toBe('M 58 0 L 58 36');
+    expect(segmentPath('pass', 2, 0)).toBe('M 58 0 L 58 32');
   });
   it('into and out in the node lane are straight halves', () => {
-    expect(segmentPath('into', 1, 1)).toBe('M 36 0 L 36 18');
-    expect(segmentPath('out', 1, 1)).toBe('M 36 18 L 36 36');
+    expect(segmentPath('into', 1, 1)).toBe('M 36 0 L 36 16');
+    expect(segmentPath('out', 1, 1)).toBe('M 36 16 L 36 32');
   });
   it('into from a lane to the left: down, quarter turn (r 8), across to the node', () => {
-    expect(segmentPath('into', 0, 1)).toBe('M 14 0 L 14 10 A 8 8 0 0 0 22 18 L 36 18');
+    expect(segmentPath('into', 0, 1)).toBe('M 14 0 L 14 8 A 8 8 0 0 0 22 16 L 36 16');
   });
   it('into from a lane to the right turns the other way', () => {
-    expect(segmentPath('into', 2, 0)).toBe('M 58 0 L 58 10 A 8 8 0 0 1 50 18 L 14 18');
+    expect(segmentPath('into', 2, 0)).toBe('M 58 0 L 58 8 A 8 8 0 0 1 50 16 L 14 16');
   });
   it('out to a lane to the right: across, quarter turn down, to the bottom', () => {
-    expect(segmentPath('out', 1, 0)).toBe('M 14 18 L 28 18 A 8 8 0 0 1 36 26 L 36 36');
+    expect(segmentPath('out', 1, 0)).toBe('M 14 16 L 28 16 A 8 8 0 0 1 36 24 L 36 32');
   });
   it('out to a lane to the left', () => {
-    expect(segmentPath('out', 0, 2)).toBe('M 58 18 L 22 18 A 8 8 0 0 0 14 26 L 14 36');
+    expect(segmentPath('out', 0, 2)).toBe('M 58 16 L 22 16 A 8 8 0 0 0 14 24 L 14 32');
   });
   it('honours a custom row height', () => {
     expect(segmentPath('pass', 0, 0, 40)).toBe('M 14 0 L 14 40');
