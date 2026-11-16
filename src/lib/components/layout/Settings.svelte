@@ -1,6 +1,8 @@
 <script lang="ts">
   import { settings } from '../../state/settings.svelte';
   import { ui } from '../../state/ui.svelte';
+  import { updater } from '../../state/updater.svelte';
+  import { updateStatusText } from '../../util/updateStatus';
   import { SHORTCUTS } from '../../util/shortcuts';
 
   let minutes = $state(String(settings.fetchIntervalMin));
@@ -47,6 +49,21 @@
       <label for="editor-cmd">Editor command</label>
       <input id="editor-cmd" type="text" placeholder="code -w" spellcheck="false" autocomplete="off" bind:value={settings.editorCommand} />
       <p class="hint">Used by "Open in editor". Leave empty to use your default text editor.</p>
+    </div>
+    <div class="field">
+      <label class="check">
+        <input type="checkbox" bind:checked={settings.autoUpdate} />
+        <span>Check for updates automatically</span>
+      </label>
+      <p class="hint indent">Asks GitHub for new versions every few hours and installs them in the background. They take effect when you restart Gitsaurus.</p>
+      <div class="inline indent">
+        {#if updater.status.kind === 'ready'}
+          <button class="primary" disabled={!updater.canRestart} onclick={() => updater.restart()}>Restart to update</button>
+        {:else}
+          <button disabled={updater.status.kind === 'checking' || updater.status.kind === 'downloading'} onclick={() => updater.check(true)}>Check now</button>
+        {/if}
+        <span class="unit" class:err={updater.status.kind === 'error'} aria-live="polite">{updateStatusText(updater.status, updater.current)}</span>
+      </div>
     </div>
     <div class="field">
       <h3>Keyboard shortcuts</h3>
@@ -126,6 +143,10 @@
   .inline input {
     width: 80px;
   }
+  .inline button {
+    flex: none;
+    white-space: nowrap;
+  }
   .unit {
     color: var(--muted);
     font-size: var(--fs-sm);
@@ -136,8 +157,12 @@
     font-size: var(--fs-xs);
     line-height: 1.45;
   }
-  .hint.indent {
+  .hint.indent,
+  .inline.indent {
     padding-left: 22px;
+  }
+  .unit.err {
+    color: var(--danger-text);
   }
   .check {
     display: flex;

@@ -25,6 +25,7 @@
   import { session } from './lib/state/session.svelte';
   import { settings } from './lib/state/settings.svelte';
   import { ui } from './lib/state/ui.svelte';
+  import { updater } from './lib/state/updater.svelte';
   import type { ChangeKind, RepoChanged } from './lib/types';
   import { isGitAction, matchShortcut } from './lib/util/shortcuts';
   import { watchDiff } from './lib/util/watchDiff';
@@ -32,6 +33,7 @@
   onMount(() => {
     session.init();
     settings.init();
+    updater.init();
     let unlisten: (() => void) | undefined;
     listen<RepoChanged>('repo-changed', (ev) => {
       if (ev.payload.repo !== repo.path) {
@@ -53,6 +55,12 @@
       unlisten?.();
       window.removeEventListener('focus', onFocus);
     };
+  });
+
+  // Background update checks, while the setting is on.
+  $effect(() => {
+    if (!settings.loaded || !settings.autoUpdate) return;
+    return untrack(() => updater.schedule());
   });
 
   // Dirty dots / missing state for every open repo: check new ones, drop closed ones.
