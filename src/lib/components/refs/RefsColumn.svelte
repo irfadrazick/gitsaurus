@@ -334,9 +334,6 @@
     outline: 2px solid var(--focus);
     outline-offset: -2px;
   }
-  .row.head .name {
-    font-weight: 600;
-  }
   .check {
     flex: none;
     width: 12px;
