@@ -8,11 +8,25 @@ use tauri::menu::Menu;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // One copy at a time: opening Gitsaurus again focuses the running window. This matters after an
+    // update is installed but before Restart, when macOS would otherwise start the new version beside
+    // the old. Debug builds skip it so `tauri dev` can run next to an installed copy.
+    #[cfg(not(debug_assertions))]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(w) = tauri::Manager::get_webview_window(app, "main") {
+            let _ = w.unminimize();
+            let _ = w.show();
+            let _ = w.set_focus();
+        }
+    }));
+    builder
         .manage(state::AppState::default())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // Resolve the login-shell PATH/SSH_AUTH_SOCK off the launch path; the first git
             // call waits on this (OnceLock) instead of spawning the shell itself.

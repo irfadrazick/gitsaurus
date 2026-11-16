@@ -14,7 +14,8 @@ A minimal, fast git client for macOS. It shows your history as a lane graph and 
 - Toolbar: Pull (fetch, fast-forward, fast-forward only, rebase), Push, Branch, Stash, Pop, Search
 - Force push only ever uses `--force-with-lease`, and only after you confirm
 - Background fetch on an interval you choose. Fetch and Pull both drop branches deleted on the remote, and a remote branch can be deleted from its menu
-- Dark theme, no telemetry, no accounts. Network use is limited to your git remotes and optional avatar lookups (can be turned off in Settings, Cmd+,)
+- Updates itself: new versions download in the background and take effect when you click Restart (it never restarts on its own)
+- Dark theme, no telemetry, no accounts. Network use is limited to your git remotes, optional avatar lookups and a check for new versions on GitHub every few hours (both can be turned off in Settings, Cmd+,)
 
 ## Install
 
@@ -25,6 +26,8 @@ A minimal, fast git client for macOS. It shows your history as a lane graph and 
    Or, from a terminal: `xattr -dr com.apple.quarantine /Applications/Gitsaurus.app`
 
 Git must be installed (`xcode-select --install` provides it).
+
+After that, Gitsaurus keeps itself up to date: when a new version has been downloaded, a "Restart to update" button appears at the bottom of the Repositories column.
 
 ## Build from source
 
@@ -66,7 +69,9 @@ git tag v0.2.0
 git push origin main v0.2.0
 ```
 
-The tag starts the Release workflow, which builds a universal `.dmg` and `.zip` and attaches them to a draft release. Check the draft on GitHub, edit the notes and publish it.
+The tag starts the Release workflow, which builds a universal `.dmg` and `.zip` and attaches them to a draft release, along with the signed update and `latest.json` that installed copies check. Check the draft on GitHub, edit the notes and publish it. Installed copies see the update once it is published.
+
+Updates are signed with a key kept in the `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` repository secrets; the matching public key is in `src-tauri/tauri.conf.json`. Keep a backup of the key: without it, installed copies can't be updated.
 
 ## License
 

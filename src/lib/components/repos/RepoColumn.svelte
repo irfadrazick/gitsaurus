@@ -3,11 +3,14 @@
   import { openMenu } from '../../state/contextMenu.svelte';
   import { health } from '../../state/repoHealth.svelte';
   import { openRepoDialog } from '../../state/repos';
+  import { busy } from '../../state/ops';
   import { session } from '../../state/session.svelte';
+  import { updater } from '../../state/updater.svelte';
   import { repoInitials, repoName } from '../../util/repoInitials';
   import Icon from '../Icon.svelte';
 
   const toggleCollapsed = () => (session.reposCollapsed = !session.reposCollapsed);
+  const ready = $derived(updater.status.kind === 'ready' ? updater.status.version : null);
 
   let dragFrom = $state<number | null>(null);
   let dragOver = $state<number | null>(null);
@@ -98,7 +101,24 @@
     {/each}
   </div>
   {#if session.reposCollapsed}
-    <button class="iconbtn expand" onclick={toggleCollapsed} title="Expand (⌘B)" aria-label="Expand repositories"><Icon name="sidebar" /></button>
+    <button
+      class="iconbtn expand"
+      onclick={toggleCollapsed}
+      title={ready ? `Expand (⌘B). Version ${ready} is ready to install.` : 'Expand (⌘B)'}
+      aria-label="Expand repositories"
+    >
+      <Icon name="sidebar" />{#if ready}<span class="update-dot"></span>{/if}
+    </button>
+  {:else if ready}
+    <button
+      class="update"
+      disabled={!updater.canRestart}
+      title={busy.size ? 'Wait for the running git operation to finish' : 'Restart Gitsaurus to use the new version'}
+      onclick={() => updater.restart()}
+    >
+      <span class="update-title">Restart to update</span>
+      <span class="update-version">Version {ready} is ready</span>
+    </button>
   {/if}
   <button class="open" onclick={openRepoDialog} title="Open repo… (⌘O)" aria-label="Open repo">
     <Icon name="plus" size={12} stroke={1.8} />{#if !session.reposCollapsed}<span>Open repo…</span>{/if}
@@ -146,7 +166,49 @@
     color: var(--text);
   }
   .iconbtn.expand {
+    position: relative;
     margin: 0 auto 2px;
+  }
+  .update-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--focus);
+  }
+  .update {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    margin: 6px 6px 0;
+    padding: 6px 10px;
+    border: 1px solid color-mix(in srgb, var(--focus) 40%, transparent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--accent) 16%, transparent);
+    text-align: left;
+    line-height: 1.3;
+  }
+  .update:hover:not(:disabled) {
+    border-color: var(--focus);
+    background: color-mix(in srgb, var(--accent) 26%, transparent);
+  }
+  .update-title,
+  .update-version {
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .update-title {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+  }
+  .update-version {
+    color: var(--muted);
+    font-size: var(--fs-xs);
   }
   .list {
     flex: 1;
