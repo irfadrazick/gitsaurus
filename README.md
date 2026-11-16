@@ -2,7 +2,9 @@
 
 [![CI](https://github.com/irfadrazick/gitsaurus/actions/workflows/ci.yml/badge.svg)](https://github.com/irfadrazick/gitsaurus/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/irfadrazick/gitsaurus/actions/workflows/codeql.yml/badge.svg)](https://github.com/irfadrazick/gitsaurus/actions/workflows/codeql.yml)
-[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/irfadrazick/gitsaurus/badge)](https://scorecard.dev/viewer/?uri=github.com/irfadrazick/gitsaurus)
+[!`main` only changes through pull requests that pass CI and CodeQL, and secret scanning blocks pushes that contain credentials. To report a vulnerability privately, see [SECURITY.md](SECURITY.md).
+
+[OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/irfadrazick/gitsaurus/badge)](https://scorecard.dev/viewer/?uri=github.com/irfadrazick/gitsaurus)
 
 A minimal, fast git client for macOS. It shows your history as a lane graph and keeps everyday work (staging, committing, branching, pulling, pushing) one click away. It shells out to the `git` CLI, so it behaves exactly like git on your machine and uses your existing credentials, config and hooks.
 
@@ -83,12 +85,19 @@ GITSAURUS_PERF_REPO=/path/to/big/repo cargo test --release --test perf -- --igno
 
 ## Release
 
+`main` is protected, so the version bump goes through a pull request like any other change:
+
 ```sh
+git switch -c release/v0.2.0
 pnpm set-version 0.2.0
 git commit -am "chore: release v0.2.0"
-git tag v0.2.0
-git push origin main v0.2.0
+git push -u origin HEAD && gh pr create --fill
+gh pr merge --merge --delete-branch   # once CI passes
+git switch main && git pull --ff-only
+git tag v0.2.0 && git push origin v0.2.0
 ```
+
+Release tags can't be moved or deleted once pushed, so if a release build fails, fix it and release the next patch version.
 
 The tag starts the Release workflow, which builds a universal `.dmg` and `.zip` and attaches them to a draft release, along with the signed update and `latest.json` that installed copies check. Check the draft on GitHub, edit the notes and publish it. Installed copies see the update once it is published.
 
