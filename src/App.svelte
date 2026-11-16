@@ -140,7 +140,7 @@
 <svelte:window onkeydown={onKeydown} />
 
 <main>
-  <Columns>
+  <Columns wide={!!repo.path && repo.centre.kind === 'diff'}>
     {#snippet repos()}
       <RepoColumn />
     {/snippet}

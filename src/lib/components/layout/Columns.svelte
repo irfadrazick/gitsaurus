@@ -2,7 +2,15 @@
   import type { Snippet } from 'svelte';
   import { session, type Widths } from '../../state/session.svelte';
 
-  let { repos, refs, centre, details }: { repos: Snippet; refs: Snippet; centre: Snippet; details: Snippet } = $props();
+  /** `wide`: the centre also takes the refs column's space (a diff is open). The refs column stays
+   * mounted, just hidden, so its filter and collapsed sections survive. */
+  let {
+    repos,
+    refs,
+    centre,
+    details,
+    wide = false,
+  }: { repos: Snippet; refs: Snippet; centre: Snippet; details: Snippet; wide?: boolean } = $props();
 
   const COLLAPSED = 44;
   const MIN: Widths = { repos: 140, refs: 160, details: 260 };
@@ -38,9 +46,9 @@
   {:else}
     <div class="handle" role="separator" aria-orientation="vertical" aria-label="Resize repositories" onpointerdown={(e) => startDrag(e, 'repos', 1)}></div>
   {/if}
-  <section class="col">{@render refs()}</section>
-  <div class="handle" role="separator" aria-orientation="vertical" aria-label="Resize refs" onpointerdown={(e) => startDrag(e, 'refs', 1)}></div>
-  <section class="col centre">{@render centre()}</section>
+  <section class="col" class:hidden={wide}>{@render refs()}</section>
+  <div class="handle" class:hidden={wide} role="separator" aria-orientation="vertical" aria-label="Resize refs" onpointerdown={(e) => startDrag(e, 'refs', 1)}></div>
+  <section class="col centre" class:wide>{@render centre()}</section>
   <div class="handle" role="separator" aria-orientation="vertical" aria-label="Resize details" onpointerdown={(e) => startDrag(e, 'details', -1)}></div>
   <section class="col">{@render details()}</section>
 </div>
@@ -59,6 +67,14 @@
   }
   .col.centre {
     background: var(--bg);
+  }
+  .col.hidden,
+  .handle.hidden {
+    display: none;
+  }
+  /* Span the refs column, its handle and the centre track. */
+  .col.centre.wide {
+    grid-column: 3 / span 3;
   }
   .col.collapsed {
     overflow: hidden;
