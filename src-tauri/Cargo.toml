@@ -24,6 +24,7 @@ tauri-plugin-store = "2"
 tauri-plugin-dialog = "2"
 tauri-plugin-clipboard-manager = "2"
 thiserror = "2"
+base64 = "0.23"
 notify = "8"
 notify-debouncer-mini = "0.7"
 serde = { version = "1", features = ["derive"] }

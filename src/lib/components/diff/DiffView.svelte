@@ -9,7 +9,9 @@
   import { shouldCloseDiffOnEsc } from '../../util/diffKeys';
   import { stepHunk } from '../../util/hunkNav';
   import { isLiveSource } from '../../util/liveDiff';
+  import { imageMime } from '../../util/image';
   import { highlightLines } from './highlight';
+  import ImageDiff from './ImageDiff.svelte';
   import SplitDiff from './SplitDiff.svelte';
   import UnifiedDiff from './UnifiedDiff.svelte';
   import Icon from '../Icon.svelte';
@@ -106,6 +108,9 @@
     else if (e.key === ']') stepTo(1);
   }
 
+  /** Set when the file is an image git treats as binary: it is shown as pictures, not a diff. */
+  const imageType = $derived(centre && diff?.binary ? imageMime(centre.path) : null);
+
   const title = $derived(centre?.origPath ? `${centre.origPath} → ${centre.path}` : (centre?.path ?? ''));
   /** Where the diff comes from, so the header answers "which version am I looking at?". */
   const sourceLabel = $derived.by(() => {
@@ -133,8 +138,10 @@
         <button type="button" class:on={centre.view === 'diff'} aria-pressed={centre.view === 'diff'} onclick={() => setView('diff')}>Diff</button>
       </div>
       <span class="grow"></span>
-      <button class="iconbtn" type="button" title="Previous change ([)" aria-label="Previous change" onclick={() => stepTo(-1)}><Icon name="arrowUp" /></button>
-      <button class="iconbtn" type="button" title="Next change (])" aria-label="Next change" onclick={() => stepTo(1)}><Icon name="arrowDown" /></button>
+      {#if !imageType}
+        <button class="iconbtn" type="button" title="Previous change ([)" aria-label="Previous change" onclick={() => stepTo(-1)}><Icon name="arrowUp" /></button>
+        <button class="iconbtn" type="button" title="Next change (])" aria-label="Next change" onclick={() => stepTo(1)}><Icon name="arrowDown" /></button>
+      {/if}
       <div class="seg" role="group" aria-label="Layout">
         <button type="button" class:on={session.diffMode === 'unified'} aria-pressed={session.diffMode === 'unified'} onclick={() => (session.diffMode = 'unified')}>Unified</button>
         <button type="button" class:on={session.diffMode === 'split'} aria-pressed={session.diffMode === 'split'} onclick={() => (session.diffMode = 'split')}>Split</button>
@@ -145,6 +152,8 @@
         <div class="note err">{error}</div>
       {:else if !diff}
         <div class="note">{loading ? 'Loading…' : ''}</div>
+      {:else if imageType}
+        <ImageDiff path={centre.path} origPath={centre.origPath} source={centre.source} mime={imageType} view={centre.view} layout={session.diffMode} />
       {:else if diff.binary}
         <div class="note">Binary file not shown</div>
       {:else if diff.tooLarge}

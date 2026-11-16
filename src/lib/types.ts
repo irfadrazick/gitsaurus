@@ -62,6 +62,10 @@ export interface Hunk {
 export interface FileDiff {
   path: string; origPath: string | null; binary: boolean; tooLarge: boolean; hunks: Hunk[];
 }
+/** One version of an image file; `data` (base64) is null when it is too large to show. */
+export interface ImageVersion { size: number; data: string | null }
+/** null on a side: the file doesn't exist there (added or deleted). */
+export interface ImageVersions { old: ImageVersion | null; new: ImageVersion | null }
 
 export type OpOutcome = 'done' | 'conflicts';
 export type PullMode = 'default' | 'ffOnly' | 'rebase';

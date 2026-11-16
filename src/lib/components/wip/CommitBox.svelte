@@ -132,7 +132,6 @@
     min-height: 56px;
     max-height: 240px;
     font: inherit;
-    font-size: var(--fs-sm);
   }
   .foot {
     display: flex;

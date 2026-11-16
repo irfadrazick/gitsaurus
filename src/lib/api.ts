@@ -1,6 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type {
-  CommitDetails, DiffSource, FileDiff, GraphCommit, GraphSummary, OpOutcome, PullMode, RefKind,
+  CommitDetails, DiffSource, FileDiff, GraphCommit, GraphSummary, ImageVersions, OpOutcome, PullMode, RefKind,
   Refs, RepoInfo, RepoState, ResetMode, Side,
 } from './types';
 
@@ -21,6 +21,8 @@ export const repoState = (repo: string) => invoke<RepoState>('repo_state', { rep
 export const commitDetails = (repo: string, oid: string) => invoke<CommitDetails>('commit_details', { repo, oid });
 export const fileDiff = (repo: string, path: string, origPath: string | null, source: DiffSource, context: number) =>
   invoke<FileDiff>('file_diff', { repo, path, origPath, source, context });
+export const imageVersions = (repo: string, path: string, origPath: string | null, source: DiffSource) =>
+  invoke<ImageVersions>('image_versions', { repo, path, origPath, source });
 /** [summary, description] of HEAD's commit message. */
 export const lastCommitMessage = (repo: string) => invoke<[string, string]>('last_commit_message', { repo });
 

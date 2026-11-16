@@ -184,6 +184,11 @@ impl Git {
         self.exec(args, &[0], None, &[("GIT_OPTIONAL_LOCKS", "0")], None)
     }
 
+    /// Read-only command whose output is raw bytes (blob contents), not text.
+    pub fn run_read_bytes(&self, args: &[&str]) -> GitResult<Vec<u8>> {
+        self.exec_bytes(args, &[0], None, &[("GIT_OPTIONAL_LOCKS", "0")], None)
+    }
+
     /// Read-only command that tolerates the given non-zero exit codes.
     pub fn run_read_ok_codes(&self, args: &[&str], ok: &[i32]) -> GitResult<String> {
         self.exec(args, ok, None, &[("GIT_OPTIONAL_LOCKS", "0")], None)
@@ -220,6 +225,18 @@ impl Git {
         extra_env: &[(&str, &str)],
         watch: Option<Watch>,
     ) -> GitResult<String> {
+        self.exec_bytes(args, ok, stdin, extra_env, watch)
+            .map(|out| String::from_utf8_lossy(&out).into_owned())
+    }
+
+    fn exec_bytes(
+        &self,
+        args: &[&str],
+        ok: &[i32],
+        stdin: Option<&str>,
+        extra_env: &[(&str, &str)],
+        watch: Option<Watch>,
+    ) -> GitResult<Vec<u8>> {
         if !self.repo.is_dir() {
             return Err(GitError::NotARepo {
                 message: format!("Not a git repository: {}", self.repo.display()),
@@ -282,10 +299,9 @@ impl Git {
         if let Some(w) = writer {
             let _ = w.join();
         }
-        let stdout = String::from_utf8_lossy(&out_bytes).into_owned();
         let code = status.code();
         if code.is_some_and(|c| ok.contains(&c)) {
-            return Ok(stdout);
+            return Ok(out_bytes);
         }
         let stderr = strip_progress(&String::from_utf8_lossy(&err_bytes));
         if stderr.contains("not a git repository") {

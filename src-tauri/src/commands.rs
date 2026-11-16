@@ -178,6 +178,20 @@ pub async fn file_diff(
     .await
 }
 
+/// Both versions of an image file, shown in place of a binary diff.
+#[tauri::command]
+pub async fn image_versions(
+    repo: String,
+    path: String,
+    orig_path: Option<String>,
+    source: DiffSource,
+) -> GitResult<g::ImageVersions> {
+    read(repo, move |git| {
+        g::image_versions(&git, &path, orig_path.as_deref(), &source)
+    })
+    .await
+}
+
 #[tauri::command]
 pub async fn last_commit_message(repo: String) -> GitResult<(String, String)> {
     read(repo, move |git| worktree::last_commit_message(&git)).await

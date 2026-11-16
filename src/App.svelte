@@ -140,7 +140,13 @@
 <svelte:window onkeydown={onKeydown} />
 
 <main>
-  <Columns>
+  <!-- The toolbar spans the whole window, so every column starts at the same height below it. -->
+  {#if repo.path}
+    <Toolbar />
+  {:else}
+    <div class="titlebar" data-tauri-drag-region></div>
+  {/if}
+  <Columns wide={!!repo.path && repo.centre.kind === 'diff'}>
     {#snippet repos()}
       <RepoColumn />
     {/snippet}
@@ -151,7 +157,6 @@
       {#if repo.path}
         <!-- GraphView stays mounted under the diff so its scroll position and page cache survive. -->
         <div class="centre">
-          <Toolbar />
           <ConflictBanner />
           <div class="stack">
             <div class="layer" class:covered={repo.centre.kind === 'diff'} inert={repo.centre.kind === 'diff'}>
@@ -193,7 +198,20 @@
 
 <style>
   main {
+    display: flex;
+    flex-direction: column;
     height: 100%;
+  }
+  /* With no repository open there is no toolbar, but the window still needs its title bar. */
+  .titlebar {
+    display: none;
+    flex: none;
+    height: var(--titlebar-h);
+    border-bottom: 1px solid var(--line);
+    background: var(--panel);
+  }
+  :global(:root[data-platform='mac']) .titlebar {
+    display: block;
   }
   .centre {
     display: flex;
