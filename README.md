@@ -77,7 +77,7 @@ From then on Gitsaurus keeps itself up to date: when a new version has downloade
 Each release lists SHA-256 checksums in `SHA256SUMS.txt`, and every file carries a build provenance attestation signed by GitHub Actions. To confirm a download was built by this repository's Release workflow from the tagged source:
 
 ```sh
-gh attestation verify Gitsaurus_0.1.0_universal.dmg --repo irfadrazick/gitsaurus
+gh attestation verify Gitsaurus_<version>_universal.dmg --repo irfadrazick/gitsaurus
 ```
 
 ## Keyboard shortcuts
