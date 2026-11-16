@@ -1,0 +1,39 @@
+# cargo-deny configuration, checked in CI (see .github/workflows/ci.yml). Run locally with: cargo deny check
+
+[graph]
+# Gitsaurus ships for macOS only, so only crates built for these targets count.
+targets = ["aarch64-apple-darwin", "x86_64-apple-darwin"]
+all-features = true
+
+[advisories]
+# Fail on any RustSec vulnerability; unmaintained crates only when we depend on them directly.
+unmaintained = "workspace"
+ignore = []
+
+[licenses]
+confidence-threshold = 0.9
+# Permissive licenses, plus MPL-2.0: file-level copyleft, used by cssparser, selectors and two small helpers
+# that Tauri pulls in. Shipping them unmodified in an MIT app is fine; crates.io keeps their source available.
+allow = [
+  "0BSD",
+  "Apache-2.0",
+  "Apache-2.0 WITH LLVM-exception",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "CC0-1.0",
+  "ISC",
+  "MIT",
+  "MIT-0",
+  "MPL-2.0",
+  "Unicode-3.0",
+  "Unlicense",
+  "Zlib",
+]
+
+[bans]
+multiple-versions = "allow"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
