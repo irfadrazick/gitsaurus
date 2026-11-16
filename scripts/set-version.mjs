@@ -31,6 +31,7 @@ for (const [file, pattern] of edits) {
 console.log(`Version set to ${version}. Next, merge it through a PR (main is protected), then tag the merge:
   git switch -c release/v${version}
   git commit -am "chore: release v${version}"
-  git push -u origin HEAD && gh pr create --fill && gh pr merge --merge --delete-branch
+  git push -u origin HEAD && gh pr create --fill
+  gh pr merge --merge --delete-branch   # once CI passes
   git switch main && git pull --ff-only
   git tag v${version} && git push origin v${version}`);
