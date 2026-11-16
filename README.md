@@ -1,5 +1,9 @@
 # Gitsaurus
 
+[![CI](https://github.com/irfadrazick/gitsaurus/actions/workflows/ci.yml/badge.svg)](https://github.com/irfadrazick/gitsaurus/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/irfadrazick/gitsaurus/actions/workflows/codeql.yml/badge.svg)](https://github.com/irfadrazick/gitsaurus/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/irfadrazick/gitsaurus/badge)](https://scorecard.dev/viewer/?uri=github.com/irfadrazick/gitsaurus)
+
 A minimal, fast git client for macOS. It shows your history as a lane graph and keeps everyday work (staging, committing, branching, pulling, pushing) one click away. It shells out to the `git` CLI, so it behaves exactly like git on your machine and uses your existing credentials, config and hooks.
 
 ## Features
@@ -28,6 +32,23 @@ A minimal, fast git client for macOS. It shows your history as a lane graph and 
 Git must be installed (`xcode-select --install` provides it).
 
 After that, Gitsaurus keeps itself up to date: when a new version has been downloaded, a "Restart to update" button appears at the bottom of the Repositories column.
+
+## Verify a download
+
+Each release lists SHA-256 checksums in `SHA256SUMS.txt`, and every file carries a build provenance attestation signed by GitHub Actions. To confirm a download was built by this repository's Release workflow from the tagged source:
+
+```sh
+gh attestation verify Gitsaurus_0.2.0_universal.dmg --repo irfadrazick/gitsaurus
+```
+
+## Security
+
+Every pull request and push to `main` runs these checks:
+
+- **CI**: type checks, tests, `clippy` and `rustfmt`, `pnpm audit`, and [`cargo deny`](src-tauri/deny.toml), which checks RustSec advisories, licenses and crate sources.
+- **CodeQL**: scans the TypeScript/Svelte, Rust and workflow code. Findings go to the repository's Security tab.
+
+[OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/irfadrazick/gitsaurus) rates the project's security practices each week. Dependabot keeps npm, Cargo and GitHub Actions dependencies current, and every action is pinned to a commit SHA.
 
 ## Build from source
 
