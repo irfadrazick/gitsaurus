@@ -1,14 +1,14 @@
 .diff {
   min-width: 100%;
   width: max-content;
-  font: 12px/19px var(--mono);
+  font: 11.5px/18px var(--mono);
   tab-size: 4;
   user-select: text;
   -webkit-user-select: text;
 }
 .diff .line {
   display: flex;
-  min-height: 19px;
+  min-height: 18px;
 }
 .diff .gutter {
   flex: none;
@@ -39,11 +39,20 @@
 }
 .diff .line.add,
 .diff .half.add {
-  background: color-mix(in srgb, var(--add) 15%, transparent);
+  background: color-mix(in srgb, var(--add) 24%, transparent);
 }
 .diff .line.del,
 .diff .half.del {
-  background: color-mix(in srgb, var(--del) 15%, transparent);
+  background: color-mix(in srgb, var(--del) 24%, transparent);
+}
+/* A stronger tint on the line numbers and +/- marks gives changed lines a clear left edge. */
+.diff .add .gutter,
+.diff .add .mark {
+  background: color-mix(in srgb, var(--add) 22%, transparent);
+}
+.diff .del .gutter,
+.diff .del .mark {
+  background: color-mix(in srgb, var(--del) 22%, transparent);
 }
 .diff .line.cmark,
 .diff .half.cmark {
@@ -53,10 +62,10 @@
   color: var(--lane-4);
   font-weight: 600;
 }
-.diff .line.add .mark {
+.diff .add .mark {
   color: var(--add);
 }
-.diff .line.del .mark {
+.diff .del .mark {
   color: var(--del);
 }
 .diff .hunk-head {

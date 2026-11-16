@@ -233,7 +233,6 @@
   .row.selected {
     background: var(--sel);
     color: var(--sel-text);
-    font-weight: 600;
   }
   .row.missing {
     color: var(--muted);

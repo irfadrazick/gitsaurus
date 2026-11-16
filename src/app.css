@@ -19,13 +19,13 @@
   --lane-8: #79c0ff;
   --lane-9: #d2a8ff;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
-  --font-min: 11px;
+  --font-min: 10.5px;
 
   /* Text sizes: one scale for the whole app. */
-  --fs-xs: 11px;
-  --fs-sm: 12px;
-  --fs-md: 13px;
-  --fs-lg: 16px;
+  --fs-xs: 10.5px;
+  --fs-sm: 11.5px;
+  --fs-md: 12px;
+  --fs-lg: 15px;
 
   /* Corners. */
   /* Corners are near-sharp throughout; the steps are kept so they can diverge again. */
@@ -96,7 +96,7 @@ body,
 body {
   background: var(--bg);
   color: var(--text);
-  font: 13px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font: 12px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
