@@ -117,7 +117,7 @@
   }
   .msg {
     padding: 10px 12px;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
   }
   .err {
     color: var(--danger-text);
@@ -172,7 +172,7 @@
     overflow-y: auto;
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
     line-height: 1.5;
     color: color-mix(in srgb, var(--text) 85%, var(--muted));
   }
@@ -197,7 +197,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
   }
   .co {
     flex-wrap: wrap;

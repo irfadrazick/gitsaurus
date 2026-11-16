@@ -165,7 +165,7 @@
     background: transparent;
     text-align: left;
     white-space: nowrap;
-    font-size: var(--fs-sm);
+    font-size: var(--fs-md);
   }
   .open:hover:not(:disabled),
   .open:active:not(:disabled) {
