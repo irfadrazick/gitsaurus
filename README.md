@@ -16,7 +16,17 @@ A minimal, fast git client for macOS. It shows your history as a lane graph and 
 - Background fetch on an interval you choose. Fetch and Pull both drop branches deleted on the remote, and a remote branch can be deleted from its menu
 - Dark theme, no telemetry, no accounts. Network use is limited to your git remotes and optional avatar lookups (can be turned off in Settings, Cmd+,)
 
-## Build
+## Install
+
+1. Download the latest `.dmg` from [Releases](https://github.com/irfadrazick/gitsaurus/releases). It runs on Apple Silicon and Intel Macs with macOS 13 or later.
+2. Open it and drag Gitsaurus into Applications.
+3. The app is not notarised by Apple yet, so the first launch is blocked. Click Done, then open System Settings > Privacy & Security, scroll to "Gitsaurus was blocked" and click Open Anyway. After that it opens normally.
+
+   Or, from a terminal: `xattr -dr com.apple.quarantine /Applications/Gitsaurus.app`
+
+Git must be installed (`xcode-select --install` provides it).
+
+## Build from source
 
 Requires macOS, Node.js, [pnpm](https://pnpm.io), Rust and the Xcode command line tools.
 
@@ -24,11 +34,7 @@ Requires macOS, Node.js, [pnpm](https://pnpm.io), Rust and the Xcode command lin
 pnpm install && pnpm tauri build
 ```
 
-The app is produced at `src-tauri/target/release/bundle/macos/Gitsaurus.app`.
-
-## Install on another Mac
-
-Copy `Gitsaurus.app` to the other Mac (for example into `/Applications`). The build is not notarised, so the first time right-click the app and choose Open, then confirm. After that it opens normally. Git must be installed on that Mac.
+The app is produced at `src-tauri/target/release/bundle/macos/Gitsaurus.app`, with a `.dmg` beside it in `bundle/dmg/`.
 
 ## Develop
 
@@ -50,3 +56,18 @@ A graph timing test against a large repository is opt-in:
 cd src-tauri
 GITSAURUS_PERF_REPO=/path/to/big/repo cargo test --release --test perf -- --ignored --nocapture
 ```
+
+## Release
+
+```sh
+pnpm set-version 0.2.0
+git commit -am "chore: release v0.2.0"
+git tag v0.2.0
+git push origin main v0.2.0
+```
+
+The tag starts the Release workflow, which builds a universal `.dmg` and `.zip` and attaches them to a draft release. Check the draft on GitHub, edit the notes and publish it.
+
+## License
+
+[MIT](LICENSE)
