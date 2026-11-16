@@ -41,7 +41,7 @@
 **History**
 - Commit graph with lanes for every branch, and search by message, author or SHA
 - Commit details with author, committer, co-authors and changed files
-- Unified and split diffs with syntax highlighting
+- Unified and split diffs with syntax highlighting, and changed images shown before and after
 
 **Everyday work**
 - Stage, unstage and discard files one at a time or all at once, from the mouse or the keyboard

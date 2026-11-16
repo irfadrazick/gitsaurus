@@ -48,6 +48,7 @@ pub fn run() {
             commands::repo_state,
             commands::commit_details,
             commands::file_diff,
+            commands::image_versions,
             commands::last_commit_message,
             commands::stage,
             commands::stage_all,
