@@ -34,8 +34,11 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "license": "MIT",
+    "copyright": "Copyright (c) 2026 Irfad Razick",
     "macOS": {
-      "minimumSystemVersion": "13.0"
+      "minimumSystemVersion": "13.0",
+      "signingIdentity": "-"
     }
   }
 }

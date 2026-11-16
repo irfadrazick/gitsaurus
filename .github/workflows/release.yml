@@ -1,0 +1,71 @@
+# Builds Gitsaurus for Apple Silicon and Intel Macs.
+# Pushing a tag like v0.2.0 creates a draft GitHub release with the .dmg and .zip attached.
+# Running it by hand (Actions > Release > Run workflow) only builds, and keeps the files as a workflow artifact.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Check the tag matches the app version
+        if: github.ref_type == 'tag'
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "$GITHUB_REF_NAME" != "v$version" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match the app version $version. Run pnpm set-version first."
+            exit 1
+          fi
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm test
+
+      - run: pnpm tauri build --target universal-apple-darwin
+
+      - name: Package
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          bundle=src-tauri/target/universal-apple-darwin/release/bundle
+          mkdir out
+          cp "$bundle/dmg/Gitsaurus_${version}_universal.dmg" out/
+          ditto -c -k --keepParent "$bundle/macos/Gitsaurus.app" "out/Gitsaurus_${version}_universal.zip"
+          (cd out && shasum -a 256 * > SHA256SUMS.txt)
+          ls -l out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gitsaurus
+          path: out/
+
+      - name: Create a draft release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" out/* --draft --title "Gitsaurus $GITHUB_REF_NAME" --generate-notes
