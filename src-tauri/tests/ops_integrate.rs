@@ -260,3 +260,60 @@ fn resolve_on_directory_prefix_errors_and_keeps_conflict() {
     assert!(resolve_conflict(&g, "sub", Side::Theirs).is_err());
     assert_eq!(conflicted(&g), vec!["sub/a.txt"]);
 }
+
+/// main at "base"; `topic` one commit ahead, tagged `lite` (lightweight) and `ann` (annotated).
+fn tagged_ahead() -> TestRepo {
+    let r = TestRepo::new();
+    r.write("a.txt", "a\n");
+    r.commit_all("base");
+    r.git(&["checkout", "-b", "topic"]);
+    r.write("b.txt", "b\n");
+    r.commit_all("b");
+    r.git(&["tag", "lite"]);
+    r.git(&["tag", "-a", "ann", "-m", "release"]);
+    r.git(&["checkout", "main"]);
+    r
+}
+
+#[test]
+fn merge_tag_fast_forwards() {
+    // Annotated tags too: git makes a merge commit only for a tag outside refs/tags/.
+    for tag in ["lite", "ann"] {
+        let r = tagged_ahead();
+        let g = Git::new(r.path());
+        assert_eq!(merge(&g, tag).unwrap(), OpOutcome::Done, "{tag}");
+        assert_eq!(
+            r.git(&["rev-parse", "main"]),
+            r.git(&["rev-parse", "topic"]),
+            "{tag}"
+        );
+    }
+}
+
+#[test]
+fn merge_tag_behind_diverged_branch_makes_a_merge_commit_without_an_editor() {
+    let r = tagged_ahead();
+    r.write("c.txt", "c\n");
+    r.commit_all("c");
+    let g = Git::new(r.path());
+    assert_eq!(merge(&g, "ann").unwrap(), OpOutcome::Done);
+    assert_eq!(
+        r.git(&["log", "-1", "--format=%P"])
+            .split_whitespace()
+            .count(),
+        2
+    );
+}
+
+#[test]
+fn rebase_onto_tag() {
+    let r = tagged_ahead();
+    r.write("c.txt", "c\n");
+    r.commit_all("c");
+    let g = Git::new(r.path());
+    assert_eq!(rebase(&g, "ann").unwrap(), OpOutcome::Done);
+    assert_eq!(
+        r.git(&["rev-parse", "main~1"]),
+        r.git(&["rev-parse", "topic"])
+    );
+}

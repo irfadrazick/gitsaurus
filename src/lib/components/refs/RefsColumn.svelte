@@ -9,6 +9,7 @@
   import type { Branch, RemoteBranch, Stash, Tag, Worktree } from '../../types';
   import type { MenuKind } from '../../util/actionTable';
   import { branchMenu, remoteBranchMenu, stashMenu, tagMenu, worktreeMenu, type MenuItem } from '../../util/menus';
+  import { refTree, type RefNode } from '../../util/refs';
   import { checkedOutElsewhere, worktreeLabel } from '../../util/worktrees';
 
   let filter = $state('');
@@ -19,10 +20,13 @@
 
   const refs = $derived(repo.refs);
   const local = $derived(refs.local.filter((b) => match(b.name)));
+  // Branch names with slashes are shown as folders: `release/v4.7` is `v4.7` inside `release`.
+  const localTree = $derived(refTree(local, (b) => b.name));
   const remoteGroups = $derived(
     refs.remotes
       .map((r) => ({ remote: r, branches: refs.remote.filter((b) => b.remote === r && match(b.name)) }))
-      .filter((g) => g.branches.length > 0),
+      .filter((g) => g.branches.length > 0)
+      .map((g) => ({ ...g, tree: refTree(g.branches, (b) => b.name) })),
   );
   const remoteCount = $derived(remoteGroups.reduce((n, g) => n + g.branches.length, 0));
   const tags = $derived(refs.tags.filter((t) => match(t.name)));
@@ -78,6 +82,8 @@
     return w ? `${base}\nChecked out in worktree ${w.name}` : base;
   }
 
+  /** Indent per folder level: a folder's contents line up with its name, past the chevron and icon. */
+  const INDENT = 18;
   const toggle = (k: string) => (collapsed[k] = !collapsed[k]);
   const open = (k: string) => !collapsed[k] || !!q;
 </script>
@@ -109,14 +115,35 @@
         </button>
       {/snippet}
 
-      {#if !q || local.length}
-        {@render header('local', 'Local', local.length, 'computer')}
-        {#if open('local')}
-          {#each local as b (b.name)}
+      {#snippet folder(key: string, name: string, depth: number)}
+        <div
+          class="row"
+          style:padding-left="{8 + depth * INDENT}px"
+          role="button"
+          tabindex="0"
+          aria-expanded={open(key)}
+          onclick={() => toggle(key)}
+          onkeydown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), toggle(key))}
+        >
+          <span class="check chev" class:closed={!open(key)}><Icon name="chevronDown" size={12} /></span>
+          <span class="ficon"><Icon name="folder" size={12} /></span>
+          <span class="name">{name}</span>
+        </div>
+      {/snippet}
+
+      {#snippet localNodes(nodes: RefNode<Branch>[], depth: number)}
+        {#each nodes as n (n.kind === 'folder' ? `/${n.path}` : n.item.name)}
+          {#if n.kind === 'folder'}
+            {@const key = `local/${n.path}`}
+            {@render folder(key, n.name, depth)}
+            {#if open(key)}{@render localNodes(n.children, depth + 1)}{/if}
+          {:else}
+            {@const b = n.item}
             <div
               class="row"
               class:selected={selectedOid === b.oid}
               class:head={b.isHead}
+              style:padding-left="{8 + depth * INDENT}px"
               role="button"
               tabindex="0"
               title={branchTitle(b)}
@@ -126,13 +153,46 @@
               oncontextmenu={(e) => show(e, branchCtx(b), branchMenu)}
             >
               <span class="check">{#if b.isHead}<Icon name="check" size={12} stroke={2} />{/if}</span>
-              <span class="name">{b.name}</span>
+              <span class="name">{n.name}</span>
               {#if elsewhere.has(b.name)}<span class="wt" aria-label="Checked out in another worktree"><Icon name="folder" size={12} /></span>{/if}
               {#if b.gone}<span class="badge gone">gone</span>{/if}
               {#if b.ahead > 0}<span class="badge">↑{b.ahead}</span>{/if}
               {#if b.behind > 0}<span class="badge">↓{b.behind}</span>{/if}
             </div>
-          {/each}
+          {/if}
+        {/each}
+      {/snippet}
+
+      {#snippet remoteNodes(nodes: RefNode<RemoteBranch>[], depth: number, remote: string)}
+        {#each nodes as n (n.kind === 'folder' ? `/${n.path}` : n.item.fullName)}
+          {#if n.kind === 'folder'}
+            {@const key = `remote/${remote}/${n.path}`}
+            {@render folder(key, n.name, depth)}
+            {#if open(key)}{@render remoteNodes(n.children, depth + 1, remote)}{/if}
+          {:else}
+            {@const b = n.item}
+            <div
+              class="row"
+              class:selected={selectedOid === b.oid}
+              style:padding-left="{8 + depth * INDENT}px"
+              role="button"
+              tabindex="0"
+              title={b.fullName}
+              onclick={() => repo.revealCommit(b.oid)}
+              onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(b.oid)}
+              oncontextmenu={(e) => show(e, remoteCtx(b), remoteBranchMenu)}
+            >
+              <span class="check"></span>
+              <span class="name">{n.name}</span>
+            </div>
+          {/if}
+        {/each}
+      {/snippet}
+
+      {#if !q || local.length}
+        {@render header('local', 'Local', local.length, 'computer')}
+        {#if open('local')}
+          {@render localNodes(localTree, 0)}
         {/if}
       {/if}
 
@@ -141,21 +201,7 @@
         {#if open('remote')}
           {#each remoteGroups as g (g.remote)}
             {#if groupRemotes}<div class="remote-name">{g.remote}</div>{/if}
-            {#each g.branches as b (b.fullName)}
-              <div
-                class="row"
-                class:selected={selectedOid === b.oid}
-                role="button"
-                tabindex="0"
-                title={b.fullName}
-                onclick={() => repo.revealCommit(b.oid)}
-                onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(b.oid)}
-                oncontextmenu={(e) => show(e, remoteCtx(b), remoteBranchMenu)}
-              >
-                <span class="check"></span>
-                <span class="name">{b.name}</span>
-              </div>
-            {/each}
+            {@render remoteNodes(g.tree, 0, g.remote)}
           {/each}
         {/if}
       {/if}
@@ -306,6 +352,14 @@
   }
   .chev.closed {
     transform: rotate(-90deg);
+  }
+  .row .chev {
+    color: var(--muted);
+  }
+  .ficon {
+    flex: none;
+    display: inline-flex;
+    color: var(--muted);
   }
   .stitle {
     flex: 1;

@@ -39,8 +39,17 @@ it('commit menu has no branch-specific items', () => {
   expect(ids).not.toContain('merge');
 });
 
+it('tag menu with a detached HEAD: merge and rebase need a branch', () => {
+  const m = tagMenu(ctx({ name: 'v1', current: null, detached: true }));
+  expect(m.filter((i) => i.disabled).map((i) => i.id)).toEqual(['merge', 'rebase']);
+  expect(labels(m).slice(0, 2)).toEqual(['Merge v1 into HEAD', 'Rebase HEAD onto v1']);
+});
+
 it('tag and stash menus', () => {
-  expect(labels(tagMenu(ctx({ name: 'v1' })))).toEqual(['Checkout v1', 'Push tag', 'Copy tag name', 'Delete v1']);
+  expect(labels(tagMenu(ctx({ name: 'v1' })))).toEqual([
+    'Merge v1 into main', 'Rebase main onto v1', 'Checkout v1', 'Create branch here…', 'Cherry-pick commit',
+    'Reset main to this commit', 'Revert commit', 'Push tag', 'Copy tag name', 'Copy commit SHA', 'Delete v1',
+  ]);
   expect(labels(stashMenu(ctx()))).toEqual(['Apply', 'Pop', 'Delete']);
   // Destructive items sit in their own group, apart from everyday actions.
   expect(tagMenu(ctx({ name: 'v1' })).find((i) => i.id === 'delete')!.separatorBefore).toBe(true);

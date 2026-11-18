@@ -42,14 +42,6 @@ export function rowPills(refs: RefLabel[]): Pill[] {
   return pills;
 }
 
-const pillKind = (p: Pill) =>
-  p.tag ? 'tag' : p.local && p.remote ? 'local + remote' : p.local ? 'local' : 'remote';
-
-/** Tooltip listing every pill of a row, one per line. */
-export function pillTitle(pills: Pill[]): string {
-  return pills.map((p) => `${p.isHead ? '✓ ' : ''}${p.name} (${pillKind(p)})`).join('\n');
-}
-
 /** Most pills shown inline on a graph row; the rest collapse into a "+N" chip. */
 export const MAX_PILLS_SHOWN = 2;
 /** Gap between pills, in px (matches `.pills { gap }` in RefPills.svelte). */
@@ -70,4 +62,34 @@ export function pillsShown(widths: number[], moreWidth: (n: number) => number, r
     if (total <= room) return k;
   }
   return Math.min(n, 1);
+}
+
+/** A branch list as folders: `release/v4.7` is the ref `v4.7` inside the folder `release`. */
+export type RefNode<T> =
+  | { kind: 'folder'; name: string; path: string; children: RefNode<T>[] }
+  | { kind: 'ref'; name: string; item: T };
+
+/**
+ * Nests refs by the `/`-separated parts of their names. Order is kept: each folder sits where its
+ * first ref came, so an alphabetical list stays alphabetical.
+ */
+export function refTree<T>(items: T[], nameOf: (t: T) => string): RefNode<T>[] {
+  const root: RefNode<T>[] = [];
+  const folders = new Map<string, RefNode<T>[]>();
+  for (const item of items) {
+    const parts = nameOf(item).split('/');
+    let level = root;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const path = parts.slice(0, i + 1).join('/');
+      let children = folders.get(path);
+      if (!children) {
+        children = [];
+        folders.set(path, children);
+        level.push({ kind: 'folder', name: parts[i], path, children });
+      }
+      level = children;
+    }
+    level.push({ kind: 'ref', name: parts[parts.length - 1], item });
+  }
+  return root;
 }
