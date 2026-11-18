@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { RefLabel } from '../types';
-import { groupPills, pillTitle, pillsShown, rowPills } from './refs';
+import type { RefLabel, Refs } from '../types';
+import { graphRefsChanged, groupPills, pillTitle, pillsShown, rowPills } from './refs';
 
 it('merges local and remote of the same branch', () => {
   const refs: RefLabel[] = [
@@ -59,5 +59,38 @@ describe('pillsShown', () => {
     expect(pillsShown([500, 500], more, 100)).toBe(1);
     expect(pillsShown([], more, 100)).toBe(0);
     expect(pillsShown([300, 300, 300], more, 0)).toBe(2);
+  });
+});
+
+describe('graphRefsChanged', () => {
+  const refs = (over: Partial<Refs> = {}): Refs => ({
+    head: { branch: 'main', oid: 'a1' },
+    local: [{ name: 'main', fullRef: 'refs/heads/main', oid: 'a1', upstream: 'origin/main', ahead: 0, behind: 0, gone: false, isHead: true }],
+    remote: [{ remote: 'origin', name: 'main', fullName: 'origin/main', oid: 'a1' }],
+    remotes: ['origin'],
+    tags: [{ name: 'v1', oid: 'a0', annotated: false }],
+    stashes: [],
+    worktrees: [],
+    ...over,
+  });
+  it('is false when the branches, remote branches, tags and HEAD are the same', () => {
+    expect(graphRefsChanged(refs(), refs())).toBe(false);
+  });
+  it('ignores what the graph does not draw: stashes and worktrees', () => {
+    expect(graphRefsChanged(refs(), refs({ stashes: [{ index: 0, message: 'wip', oid: 's1' }] }))).toBe(false);
+  });
+  it('is true when a branch moves, appears or is renamed', () => {
+    const moved = refs();
+    moved.local[0].oid = 'b2';
+    expect(graphRefsChanged(refs(), moved)).toBe(true);
+    const renamed = refs();
+    renamed.local[0].name = 'trunk';
+    expect(graphRefsChanged(refs(), renamed)).toBe(true);
+  });
+  it('is true when a remote branch, a tag or HEAD changes', () => {
+    expect(graphRefsChanged(refs(), refs({ remote: [] }))).toBe(true);
+    expect(graphRefsChanged(refs(), refs({ tags: [{ name: 'v1', oid: 'a1', annotated: false }] }))).toBe(true);
+    expect(graphRefsChanged(refs(), refs({ head: { branch: null, oid: 'a1' } }))).toBe(true);
+    expect(graphRefsChanged(refs(), refs({ head: { branch: 'main', oid: 'a0' } }))).toBe(true);
   });
 });

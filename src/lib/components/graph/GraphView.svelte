@@ -107,7 +107,7 @@
   function setScroll(top: number) {
     if (!scroller) return;
     scroller.scrollTop = top;
-    scrollTop = scroller.scrollTop;
+    scrollTop = repo.scrollTop = scroller.scrollTop;
   }
 
   /** Scroll so graph row `i` is visible (centred when it was off screen). Used by refs and parent-SHA links. */
@@ -148,7 +148,8 @@
     });
   });
 
-  // Switching repositories starts at the top.
+  // Switching repositories goes back to where that one was left (the top for one not seen yet).
+  // The offset is read now: the old content's scroll events may still overwrite repo.scrollTop.
   let lastPath: string | null = untrack(() => repo.path);
   $effect(() => {
     const p = repo.path;
@@ -156,7 +157,11 @@
       if (p === lastPath) return;
       lastPath = p;
       selIndex = -1;
-      setScroll(0);
+      const top = repo.scrollTop;
+      scrollTop = top; // render the right rows now; the element scrolls once its content has grown
+      tick().then(() => {
+        if (repo.path === p) setScroll(top);
+      });
     });
   });
 
@@ -295,7 +300,7 @@
     bind:this={scroller}
     bind:clientHeight={viewportH}
     bind:clientWidth={viewportW}
-    onscroll={() => (scrollTop = scroller?.scrollTop ?? 0)}
+    onscroll={() => (scrollTop = repo.scrollTop = scroller?.scrollTop ?? 0)}
     onclick={onClick}
     oncontextmenu={onContextMenu}
     onkeydown={onKeydown}
