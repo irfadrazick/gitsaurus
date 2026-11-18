@@ -1,6 +1,6 @@
 import { getVersion } from '@tauri-apps/api/app';
-import { relaunch } from '@tauri-apps/plugin-process';
 import { check } from '@tauri-apps/plugin-updater';
+import { restartApp } from '../api';
 import { updateErrorMessage, type UpdateStatus } from '../util/updateStatus';
 import { busy } from './ops';
 
@@ -68,7 +68,7 @@ class Updater {
   }
 
   async restart() {
-    if (this.canRestart) await relaunch();
+    if (this.canRestart) await restartApp();
   }
 }
 

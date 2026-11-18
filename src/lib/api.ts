@@ -96,3 +96,7 @@ export const unwatchRepo = (repo: string) => invoke<void>('unwatch_repo', { repo
 export const openInEditor = (repo: string, path: string, editorCommand: string) =>
   invoke<void>('open_in_editor', { repo, path, editorCommand });
 export const revealInFinder = (repo: string, path: string) => invoke<void>('reveal_in_finder', { repo, path });
+
+// app
+/** Restarts Gitsaurus after an update: the new copy opens once this one has quit. */
+export const restartApp = () => invoke<void>('restart_app');
