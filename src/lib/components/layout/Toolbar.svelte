@@ -147,8 +147,9 @@
       <span class="repo" data-tauri-drag-region>{name}</span>
       {#if branch}
         <span class="sep" data-tauri-drag-region>/</span><span class="branch" data-tauri-drag-region>{branch}</span>
-      {:else}
-        <span class="sep" data-tauri-drag-region>/</span><span class="branch mono" data-tauri-drag-region>{oid?.slice(0, 7) ?? ''}</span><span class="detached" data-tauri-drag-region>detached</span>
+      {:else if oid}
+        <!-- Detached HEAD. While a repository opens there is no HEAD yet, so only its name shows. -->
+        <span class="sep" data-tauri-drag-region>/</span><span class="branch mono" data-tauri-drag-region>{oid.slice(0, 7)}</span><span class="detached" data-tauri-drag-region>detached</span>
       {/if}
       {#if bg.fetching === path}<span class="fetching" role="status">Fetching…</span>{/if}
     </div>

@@ -3,7 +3,7 @@
   import type { GraphCommit } from '../../types';
   import { initials } from '../../util/avatar';
   import {
-    LINE_W, MERGE_R, NODE_R, ROW_H, cellWidth, laneColor, laneX, seedSegment, seedStyle, segmentPath,
+    LINE_W, MERGE_R, NODE_R, ROW_H, SEL_RING_R, cellWidth, laneColor, laneX, seedSegment, seedStyle, segmentPath,
     type SegmentStyle,
   } from '../../util/graphGeometry';
 
@@ -72,7 +72,7 @@
       {/each}
     </g>
     {#if selected}
-      <circle cx={nx} cy={cy} r={(merge ? MERGE_R : NODE_R) + 3.5} fill="none" stroke={stroke} stroke-opacity="0.55" stroke-width="2" />
+      <circle cx={nx} cy={cy} r={merge ? MERGE_R + 3.5 : SEL_RING_R} fill="none" stroke={stroke} stroke-opacity="0.55" stroke-width="2" />
     {/if}
     {#if merge}
       <circle cx={nx} cy={cy} r={MERGE_R} style="fill: var(--bg)" />

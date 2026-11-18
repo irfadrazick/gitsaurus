@@ -27,6 +27,9 @@
   let scroller: HTMLDivElement | undefined = $state();
   let scrollTop = $state(0);
   let viewportH = $state(0);
+  let viewportW = $state(0);
+  /** Room for a row's ref pills: half the message cell's content box (`.pills { max-width: 50% }`, `.msg` padding 18 px). */
+  const pillRoom = $derived(viewportW > 0 ? Math.floor((viewportW - graphW - 18) / 2) : 0);
 
   const total = $derived(repo.summary.total);
   const wipCount = $derived(repo.state.files.length);
@@ -291,6 +294,7 @@
     class:kbd={keyboardNav}
     bind:this={scroller}
     bind:clientHeight={viewportH}
+    bind:clientWidth={viewportW}
     onscroll={() => (scrollTop = scroller?.scrollTop ?? 0)}
     onclick={onClick}
     oncontextmenu={onContextMenu}
@@ -321,10 +325,19 @@
             age={c ? shortAge(c.authorTime, now) : ''}
             headIndex={repo.summary.headIndex}
             hasWip={hasWip}
+            pillRoom={pillRoom}
           />
         {/each}
       </div>
     </div>
+    {#if repo.loading && total === 0}
+      <!-- A repository is opening: placeholder rows, shown only if that takes a moment. -->
+      <div class="loadingrows skeleton-delayed" aria-hidden="true">
+        {#each { length: Math.max(1, Math.ceil(viewportH / ROW_H)) } as _, i (i)}
+          <GraphRow index={i} />
+        {/each}
+      </div>
+    {/if}
     {#if total === 0 && !hasWip && !repo.loading}
       <p class="empty">No commits yet</p>
     {/if}
@@ -412,6 +425,12 @@
     right: 0;
     left: 0;
     will-change: transform;
+  }
+  .loadingrows {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
   }
   .empty {
     position: absolute;

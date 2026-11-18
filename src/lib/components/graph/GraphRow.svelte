@@ -18,6 +18,7 @@
     age = '',
     headIndex = null,
     hasWip = false,
+    pillRoom = 0,
   }: {
     index: number;
     /** Undefined while its page loads (skeleton row). */
@@ -34,13 +35,15 @@
     /** HEAD's graph index and whether a WIP row is shown: GraphCell styles the seed segments (R8). */
     headIndex?: number | null;
     hasWip?: boolean;
+    /** Width the ref pills may take, in px (0 while unmeasured). */
+    pillRoom?: number;
   } = $props();
 
   const isWip = $derived(wipCount !== undefined);
   const color = $derived(commit?.color ?? 0);
   const pills = $derived(commit ? rowPills(commit.refs) : []);
   // Skeleton bars vary in width so a loading page doesn't look like a grid.
-  const skel = $derived(28 + ((index * 37) % 41));
+  const skel = $derived(28 + ((index * 61 + 17) % 43));
 </script>
 
 {#if isWip}
@@ -70,7 +73,7 @@
       <GraphCell commit={commit} selected={selected} index={index} headIndex={headIndex} hasWip={hasWip} />
     </div>
     <div class="msg">
-      {#if pills.length}<RefPills pills={pills} color={laneColor(color)} />{/if}
+      {#if pills.length}<RefPills pills={pills} color={laneColor(color)} room={pillRoom} />{/if}
       <span class="text"><span class="summary">{commit.summary}</span>{#if commit.bodyPreview}<span class="body">{commit.bodyPreview}</span>{/if}</span>
       <span class="age" title={formatDate(commit.authorTime)}>{age}</span>
     </div>
@@ -78,7 +81,7 @@
 {:else}
   <div class="row skeleton" role="option" aria-selected="false" aria-busy="true">
     <div class="graph"><span class="dot"></span></div>
-    <div class="msg"><span class="bar" style:width="{skel}%"></span></div>
+    <div class="msg"><span class="skeleton-bar" style:width="{skel}%"></span></div>
   </div>
 {/if}
 
@@ -166,28 +169,8 @@
     display: block;
     width: 10px;
     height: 10px;
-    margin: 13px 0 0 9px;
+    margin: 11px 0 0 11px; /* centred on lane 0: laneX(0) = 16, ROW_H / 2 = 16 */
     border-radius: 50%;
     background: rgb(255 255 255 / 0.06);
-  }
-  .bar {
-    height: 10px;
-    border-radius: var(--radius-sm);
-    background: linear-gradient(90deg, rgb(255 255 255 / 0.05), rgb(255 255 255 / 0.09), rgb(255 255 255 / 0.05));
-    background-size: 200% 100%;
-    animation: shimmer 1.4s linear infinite;
-  }
-  @keyframes shimmer {
-    from {
-      background-position: 100% 0;
-    }
-    to {
-      background-position: -100% 0;
-    }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .bar {
-      animation: none;
-    }
   }
 </style>
