@@ -86,10 +86,18 @@ export function commitMenu(c: MenuContext): MenuItem[] {
 }
 
 export function tagMenu(c: MenuContext): MenuItem[] {
+  const cur = c.current ?? 'HEAD';
   return [
+    { id: 'merge', label: `Merge ${c.name} into ${cur}`, disabled: c.detached },
+    { id: 'rebase', label: `Rebase ${cur} onto ${c.name}`, disabled: c.detached },
     { id: 'checkout', label: `Checkout ${c.name}` },
-    { id: 'pushTag', label: 'Push tag' },
+    { id: 'createBranch', label: 'Create branch here…', separatorBefore: true },
+    { id: 'cherryPick', label: 'Cherry-pick commit' },
+    resetItem(c.current),
+    { id: 'revert', label: 'Revert commit' },
+    { id: 'pushTag', label: 'Push tag', separatorBefore: true },
     { id: 'copyTagName', label: 'Copy tag name', separatorBefore: true },
+    { id: 'copySha', label: 'Copy commit SHA' },
     { id: 'delete', label: `Delete ${c.name}`, danger: true, separatorBefore: true },
   ];
 }

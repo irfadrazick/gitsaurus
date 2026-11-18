@@ -8,12 +8,14 @@
   import type { GraphCommit, Pill } from '../../types';
   import type { MenuKind } from '../../util/actionTable';
   import {
-    GRAPH_COL_MIN, OVERSCAN, ROW_H, graphColumnWidth, keepVisibleScrollTop, pagesFor, revealScrollTop, visibleRange,
+    GRAPH_COL_MIN, OVERSCAN, ROW_H, graphColumnWidth, keepVisibleScrollTop, laneColor, pagesFor, revealScrollTop,
+    visibleRange,
   } from '../../util/graphGeometry';
   import { branchMenu, commitMenu, remoteBranchMenu, tagMenu, type MenuItem } from '../../util/menus';
   import { rowPills } from '../../util/refs';
   import { shortAge } from '../../util/time';
   import GraphRow from './GraphRow.svelte';
+  import PillPeek from './PillPeek.svelte';
   import SearchBar from './SearchBar.svelte';
 
   // --- layout ---------------------------------------------------------------------------------
@@ -241,6 +243,110 @@
     openMenu(e.clientX, e.clientY, items(ctx), (id) => performMenuAction(id, ctx));
   }
 
+  // --- pill hover: a truncated pill shown in full, or every pill of a row with a "+N" chip ------
+  const PEEK_DELAY = 120;
+  /** How long a pill list stays up after the pointer leaves the row's pills, so it can move into the list. */
+  const PEEK_GRACE = 200;
+  let peek = $state<{
+    pills: Pill[]; color: string; mode: 'expand' | 'list'; anchor: DOMRect; index: number;
+  } | null>(null);
+  let peekEl: Element | null = null;
+  let peekTimer: ReturnType<typeof setTimeout> | undefined;
+  let graceTimer: ReturnType<typeof setTimeout> | undefined;
+
+  function hidePeek() {
+    clearTimeout(peekTimer);
+    clearTimeout(graceTimer);
+    peekEl = null;
+    peek = null;
+  }
+
+  /** Keep the shown "+N" list up a moment (the pointer may be heading into it), or hide anything else now. */
+  function leavePeek() {
+    if (peek?.mode !== 'list') return hidePeek();
+    clearTimeout(graceTimer);
+    graceTimer = setTimeout(hidePeek, PEEK_GRACE);
+  }
+
+  function keepPeek() {
+    clearTimeout(graceTimer);
+  }
+
+  const inPeek = (n: EventTarget | null) => !!(n as Element | null)?.closest?.('[data-peek]');
+
+  function showPeek(el: HTMLElement) {
+    const row = rowOf(el);
+    const index = row && 'index' in row ? row.index : -1;
+    const c = index >= 0 ? repo.commitAt(index) : undefined;
+    if (!c || !el.isConnected) return;
+    const pills = rowPills(c.refs);
+    const color = laneColor(c.color);
+    const anchor = el.getBoundingClientRect();
+    if (el.dataset.overflow !== undefined) {
+      peek = { pills, color, mode: 'list', anchor, index };
+      return;
+    }
+    const name = el.querySelector('.name');
+    const pill = pills[Number(el.dataset.pill)];
+    if (pill && name && name.scrollWidth > name.clientWidth) peek = { pills: [pill], color, mode: 'expand', anchor, index };
+  }
+
+  function onPointerOver(e: PointerEvent) {
+    // In a row with hidden pills, any pill or the chip opens the list of them all.
+    const hit = (e.target as Element).closest<HTMLElement>('[data-pill], .more');
+    const el = hit?.closest<HTMLElement>('[data-overflow]') ?? hit;
+    if (el && el === peekEl) return keepPeek();
+    if (!el && peek?.mode === 'list') return leavePeek();
+    hidePeek();
+    if (!el) return;
+    peekEl = el;
+    peekTimer = setTimeout(() => showPeek(el), PEEK_DELAY);
+  }
+
+  function onPointerOut(e: PointerEvent) {
+    if (!peekEl || peekEl.contains(e.relatedTarget as Node | null)) return;
+    if (inPeek(e.relatedTarget)) keepPeek();
+    else leavePeek();
+  }
+
+  function onPeekLeave(e: PointerEvent) {
+    if (!peekEl?.contains(e.relatedTarget as Node | null)) hidePeek();
+  }
+
+  /** The pill under the pointer in a pill list, with its row's commit. */
+  function peekPill(e: MouseEvent): { pill: Pill; index: number; c: GraphCommit } | null {
+    const el = (e.target as Element).closest<HTMLElement>('[data-pill]');
+    const pill = el && peek ? peek.pills[Number(el.dataset.pill)] : undefined;
+    const c = peek ? repo.commitAt(peek.index) : undefined;
+    return pill && c && peek ? { pill, index: peek.index, c } : null;
+  }
+
+  function onPeekClick(e: MouseEvent) {
+    const hit = peekPill(e);
+    hidePeek();
+    if (hit) selectIndex(hit.index);
+  }
+
+  function onPeekContextMenu(e: MouseEvent) {
+    e.preventDefault();
+    const hit = peekPill(e);
+    hidePeek();
+    if (!hit || !repo.path) return;
+    selectIndex(hit.index);
+    const { ctx, items } = pillMenu(hit.pill, hit.c);
+    openMenu(e.clientX, e.clientY, items(ctx), (id) => performMenuAction(id, ctx));
+  }
+
+  // The anchor rect goes stale when the list scrolls or changes, or another repository is shown.
+  $effect(() => {
+    void scrollTop;
+    void repo.path;
+    void repo.graphVersion;
+    untrack(() => {
+      if (peekEl) hidePeek();
+    });
+  });
+
   // Focus ring on the selected row only after keyboard use; a click focuses the scroller programmatically.
   let keyboardNav = $state(false);
 
@@ -299,8 +405,11 @@
     onclick={onClick}
     oncontextmenu={onContextMenu}
     onkeydown={onKeydown}
+    onpointerover={onPointerOver}
+    onpointerout={onPointerOut}
     onpointerdown={() => {
       keyboardNav = false;
+      hidePeek();
       onPointerDown();
     }}
     role="listbox"
@@ -342,6 +451,22 @@
       <p class="empty">No commits yet</p>
     {/if}
   </div>
+
+  {#if peek}
+    <PillPeek
+      pills={peek.pills}
+      color={peek.color}
+      mode={peek.mode}
+      anchor={peek.anchor}
+      role={peek.mode === 'list' ? 'group' : undefined}
+      aria-label={peek.mode === 'list' ? 'More branches and tags' : undefined}
+      aria-hidden={peek.mode === 'expand' ? 'true' : undefined}
+      onpointerenter={keepPeek}
+      onpointerleave={onPeekLeave}
+      onclick={onPeekClick}
+      oncontextmenu={onPeekContextMenu}
+    />
+  {/if}
 
   {#if ui.searchOpen}
     <div class="searchwrap">

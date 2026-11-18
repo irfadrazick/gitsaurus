@@ -25,7 +25,11 @@ const TABLE: Record<MenuKind, Record<string, ActionKey>> = {
   },
   remoteBranch: { checkout: 'checkoutRemote', copyBranchName: 'copyBranchName', delete: 'deleteRemoteBranch' },
   commit: { ...common, checkout: 'checkoutCommit' },
-  tag: { checkout: 'checkoutTag', pushTag: 'pushTag', delete: 'deleteTag', copyTagName: 'copyTagName' },
+  tag: {
+    ...common,
+    merge: 'merge', rebase: 'rebase',
+    checkout: 'checkoutTag', pushTag: 'pushTag', delete: 'deleteTag', copyTagName: 'copyTagName',
+  },
   stash: { stashApply: 'stashApply', stashPop: 'stashPop', stashDrop: 'stashDrop' },
 };
 
