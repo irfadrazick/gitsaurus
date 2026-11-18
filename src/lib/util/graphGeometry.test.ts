@@ -3,6 +3,9 @@ import {
   cellWidth,
   graphColumnWidth,
   keepVisibleScrollTop,
+  LINE_W,
+  ROW_H,
+  SEL_RING_R,
   laneColor,
   laneX,
   pagesFor,
@@ -16,17 +19,25 @@ import {
 } from './graphGeometry';
 
 describe('lane geometry', () => {
-  it('laneX is 14 + lane * 22', () => {
-    expect(laneX(0)).toBe(14);
-    expect(laneX(1)).toBe(36);
-    expect(laneX(4)).toBe(102);
+  it('laneX is 16 + lane * 22', () => {
+    expect(laneX(0)).toBe(16);
+    expect(laneX(1)).toBe(38);
+    expect(laneX(4)).toBe(104);
   });
-  it('cellWidth is width * 22 + 8', () => {
-    expect(cellWidth(1)).toBe(30);
-    expect(cellWidth(3)).toBe(74);
+  it('cellWidth is width * 22 + 10', () => {
+    expect(cellWidth(1)).toBe(32);
+    expect(cellWidth(3)).toBe(76);
+  });
+  it('the selection ring fits inside the cell in the first and last lanes', () => {
+    const outer = SEL_RING_R + LINE_W / 2;
+    for (const width of [1, 3, 8]) {
+      expect(laneX(0) - outer).toBeGreaterThanOrEqual(0);
+      expect(laneX(width - 1) + outer).toBeLessThanOrEqual(cellWidth(width));
+    }
+    expect(ROW_H / 2 - outer).toBeGreaterThanOrEqual(0);
   });
   it('graph column fits max lanes up to the cap, never below 64 px (room for the header)', () => {
-    expect(graphColumnWidth(3, 400)).toBe(74);
+    expect(graphColumnWidth(3, 400)).toBe(76);
     expect(graphColumnWidth(30, 200)).toBe(200);
     expect(graphColumnWidth(0, 200)).toBe(64);
     expect(graphColumnWidth(1, 200)).toBe(64);
@@ -42,27 +53,27 @@ describe('lane geometry', () => {
 
 describe('segmentPath', () => {
   it('pass runs straight through the row', () => {
-    expect(segmentPath('pass', 2, 0)).toBe('M 58 0 L 58 32');
+    expect(segmentPath('pass', 2, 0)).toBe('M 60 0 L 60 32');
   });
   it('into and out in the node lane are straight halves', () => {
-    expect(segmentPath('into', 1, 1)).toBe('M 36 0 L 36 16');
-    expect(segmentPath('out', 1, 1)).toBe('M 36 16 L 36 32');
+    expect(segmentPath('into', 1, 1)).toBe('M 38 0 L 38 16');
+    expect(segmentPath('out', 1, 1)).toBe('M 38 16 L 38 32');
   });
   it('into from a lane to the left: down, quarter turn (r 8), across to the node', () => {
-    expect(segmentPath('into', 0, 1)).toBe('M 14 0 L 14 8 A 8 8 0 0 0 22 16 L 36 16');
+    expect(segmentPath('into', 0, 1)).toBe('M 16 0 L 16 8 A 8 8 0 0 0 24 16 L 38 16');
   });
   it('into from a lane to the right turns the other way', () => {
-    expect(segmentPath('into', 2, 0)).toBe('M 58 0 L 58 8 A 8 8 0 0 1 50 16 L 14 16');
+    expect(segmentPath('into', 2, 0)).toBe('M 60 0 L 60 8 A 8 8 0 0 1 52 16 L 16 16');
   });
   it('out to a lane to the right: across, quarter turn down, to the bottom', () => {
-    expect(segmentPath('out', 1, 0)).toBe('M 14 16 L 28 16 A 8 8 0 0 1 36 24 L 36 32');
+    expect(segmentPath('out', 1, 0)).toBe('M 16 16 L 30 16 A 8 8 0 0 1 38 24 L 38 32');
   });
   it('out to a lane to the left', () => {
-    expect(segmentPath('out', 0, 2)).toBe('M 58 16 L 22 16 A 8 8 0 0 0 14 24 L 14 32');
+    expect(segmentPath('out', 0, 2)).toBe('M 60 16 L 24 16 A 8 8 0 0 0 16 24 L 16 32');
   });
   it('honours a custom row height', () => {
-    expect(segmentPath('pass', 0, 0, 40)).toBe('M 14 0 L 14 40');
-    expect(segmentPath('out', 1, 0, 40)).toBe('M 14 20 L 28 20 A 8 8 0 0 1 36 28 L 36 40');
+    expect(segmentPath('pass', 0, 0, 40)).toBe('M 16 0 L 16 40');
+    expect(segmentPath('out', 1, 0, 40)).toBe('M 16 20 L 30 20 A 8 8 0 0 1 38 28 L 38 40');
   });
 });
 

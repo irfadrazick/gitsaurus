@@ -89,6 +89,16 @@
   <div class="scroll">
     {#if !repo.path}
       <p class="empty">No repository selected</p>
+    {:else if repo.loading && !local.length && !remoteCount && !tags.length}
+      <!-- A repository is opening: placeholder sections, shown only if that takes a moment. -->
+      <div class="skeleton-delayed" aria-hidden="true">
+        {#each [3, 2, 4] as rows, g (g)}
+          <div class="skhead"><span class="skeleton-bar"></span></div>
+          {#each { length: rows } as _, i (i)}
+            <div class="skrow"><span class="skeleton-bar" style:width="{36 + ((g * 3 + i) * 23) % 40}%"></span></div>
+          {/each}
+        {/each}
+      </div>
     {:else}
       {#snippet header(key: string, title: string, count: number, icon?: IconName)}
         <button class="sec" onclick={() => toggle(key)} aria-expanded={open(key)}>
@@ -333,6 +343,25 @@
   .row:focus-visible {
     outline: 2px solid var(--focus);
     outline-offset: -2px;
+  }
+  /* Placeholders sized like a section header and a row. */
+  .skhead {
+    display: flex;
+    align-items: center;
+    height: 32px;
+    margin: 6px 0 2px;
+    padding: 0 6px;
+    border-top: 1px solid var(--line);
+  }
+  .skhead .skeleton-bar {
+    width: 72px;
+    height: 8px;
+  }
+  .skrow {
+    display: flex;
+    align-items: center;
+    height: 28px;
+    padding: 0 8px 0 26px; /* past the 12 px check column and its 6 px gap */
   }
   .check {
     flex: none;

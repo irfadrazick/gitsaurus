@@ -49,3 +49,25 @@ const pillKind = (p: Pill) =>
 export function pillTitle(pills: Pill[]): string {
   return pills.map((p) => `${p.isHead ? '✓ ' : ''}${p.name} (${pillKind(p)})`).join('\n');
 }
+
+/** Most pills shown inline on a graph row; the rest collapse into a "+N" chip. */
+export const MAX_PILLS_SHOWN = 2;
+/** Gap between pills, in px (matches `.pills { gap }` in RefPills.svelte). */
+export const PILL_GAP = 4;
+
+/**
+ * How many of a row's pills to show in full in `room` px: up to MAX_PILLS_SHOWN when they and the
+ * "+N" chip for the rest fit, else just the first (it may truncate). `widths` are the pills' natural
+ * widths, `moreWidth(n)` is the width of a "+n" chip; a `room` of 0 or less (not measured yet) shows the most.
+ */
+export function pillsShown(widths: number[], moreWidth: (n: number) => number, room: number): number {
+  const n = widths.length;
+  const most = Math.min(n, MAX_PILLS_SHOWN);
+  if (room <= 0) return most;
+  for (let k = most; k > 1; k--) {
+    let total = widths.slice(0, k).reduce((a, w) => a + w, 0) + PILL_GAP * (k - 1);
+    if (n > k) total += PILL_GAP + moreWidth(n - k);
+    if (total <= room) return k;
+  }
+  return Math.min(n, 1);
+}

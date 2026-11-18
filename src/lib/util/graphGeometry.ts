@@ -2,8 +2,10 @@
 
 export const ROW_H = 32;
 export const LANE_W = 22;
-export const LANE_X0 = 14;
+export const LANE_X0 = 16;
 export const NODE_R = 11;
+/** Selection ring around a commit node; LANE_X0 and cellWidth leave room for it (plus half its stroke). */
+export const SEL_RING_R = NODE_R + 3.5;
 export const MERGE_R = 6;
 export const ELBOW_R = 8;
 export const LINE_W = 2;
@@ -22,7 +24,7 @@ export const laneColor = (color: number): string => palette[((color % palette.le
 export const laneX = (lane: number): number => LANE_X0 + lane * LANE_W;
 
 /** Width of a row's graph SVG for a row `width` (lanes in use). */
-export const cellWidth = (width: number): number => width * LANE_W + 8;
+export const cellWidth = (width: number): number => width * LANE_W + 10;
 
 /** Narrowest graph column: one lane plus room for the GRAPH header label. */
 export const GRAPH_COL_MIN = 64;
