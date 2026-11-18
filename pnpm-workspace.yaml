@@ -1,0 +1,9 @@
+# pnpm settings for this (single-package) project.
+
+auditConfig:
+  # Advisories that `pnpm audit` in CI skips. Each needs a reason and comes out once a fix ships.
+  ignoreGhsas:
+    # picomatch <= 4.0.7: ReDoS on hostile extglob patterns; no patched release yet (2026-11-18).
+    # Only reached through Vite, Vitest and their globbing helpers at build and test time, on
+    # the project's own patterns; none of it is in the shipped app. Remove once a fix is released.
+    - GHSA-fc5q-39xc-vjpf
