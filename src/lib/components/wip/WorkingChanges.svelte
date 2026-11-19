@@ -118,7 +118,7 @@
       <header>
         <h3>Unstaged files ({unstaged.length})</h3>
         <span class="btns">
-          <button type="button" class="danger-quiet" disabled={unstaged.length === 0} onclick={discardAll} title="Discard all unstaged changes">Discard all…</button>
+          <button type="button" class="danger-quiet" disabled={unstaged.length === 0} onclick={discardAll} title="Discard all unstaged changes">Discard all</button>
           <button type="button" disabled={unstaged.length === 0} onclick={stageAll} title="Stage all (⌘⇧S)">Stage all</button>
         </span>
       </header>
@@ -171,7 +171,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 4px 8px;
+    padding: 5px 8px;
     background: var(--panel);
     border-bottom: 1px solid var(--line);
   }
@@ -181,8 +181,8 @@
     font-weight: 600;
   }
   header button {
-    padding: 1px 8px;
-    font-size: var(--fs-xs);
+    padding: 3px 10px;
+    font-size: var(--fs-sm);
   }
   .btns {
     display: flex;

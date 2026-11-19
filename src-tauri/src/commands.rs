@@ -653,6 +653,26 @@ pub async fn reveal_in_finder(repo: String, path: String) -> GitResult<()> {
     }
 }
 
+// ---- app ----
+
+/// Restarts the app, for the updater. In a bundle, the new copy opens only after this one has
+/// exited (see `system::relaunch_after_exit`); otherwise Tauri's own restart.
+#[tauri::command]
+pub fn restart_app(app: AppHandle) -> GitResult<()> {
+    let exe = std::env::current_exe().map_err(|e| GitError::Failed {
+        message: "could not restart Gitsaurus".into(),
+        stderr: e.to_string(),
+    })?;
+    match system::bundle_of(&exe) {
+        Some(bundle) => {
+            system::relaunch_after_exit(bundle)?;
+            app.exit(0);
+            Ok(())
+        }
+        None => app.restart(),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

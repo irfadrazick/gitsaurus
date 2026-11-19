@@ -26,7 +26,6 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             // Resolve the login-shell PATH/SSH_AUTH_SOCK off the launch path; the first git
             // call waits on this (OnceLock) instead of spawning the shell itself.
@@ -94,6 +93,7 @@ pub fn run() {
             commands::remove_worktree,
             commands::prune_worktrees,
             commands::reveal_in_finder,
+            commands::restart_app,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

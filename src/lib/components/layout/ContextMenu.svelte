@@ -151,8 +151,10 @@
   .menu {
     position: fixed;
     z-index: 901;
+    /* As wide as the longest item (a long branch name), up to the window's width. */
+    width: max-content;
     min-width: 200px;
-    max-width: 320px;
+    max-width: calc(100vw - 8px);
     padding: 4px;
     background: var(--panel);
     border: 1px solid var(--line);

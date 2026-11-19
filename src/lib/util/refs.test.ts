@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RefLabel, Refs } from '../types';
-import { graphRefsChanged, groupPills, pillTitle, pillsShown, rowPills } from './refs';
+import { graphRefsChanged, groupPills, pillsShown, refTree, rowPills, type RefNode } from './refs';
 
 it('merges local and remote of the same branch', () => {
   const refs: RefLabel[] = [
@@ -23,17 +23,6 @@ it('rowPills puts the checked-out branch first, keeping the rest in order', () =
     { kind: 'local', name: 'main', isHead: true },
   ];
   expect(rowPills(refs).map((p) => p.name)).toEqual(['main', 'dev', 'v2']);
-});
-
-it('pillTitle describes every pill on its own line', () => {
-  const pills = groupPills([
-    { kind: 'local', name: 'main', isHead: true },
-    { kind: 'remote', name: 'origin/main', isHead: false },
-    { kind: 'local', name: 'dev', isHead: false },
-    { kind: 'remote', name: 'origin/x', isHead: false },
-    { kind: 'tag', name: 'v1', isHead: false },
-  ]);
-  expect(pillTitle(pills)).toBe('✓ main (local + remote)\ndev (local)\norigin/x (remote)\nv1 (tag)');
 });
 
 describe('pillsShown', () => {
@@ -92,5 +81,29 @@ describe('graphRefsChanged', () => {
     expect(graphRefsChanged(refs(), refs({ tags: [{ name: 'v1', oid: 'a1', annotated: false }] }))).toBe(true);
     expect(graphRefsChanged(refs(), refs({ head: { branch: null, oid: 'a1' } }))).toBe(true);
     expect(graphRefsChanged(refs(), refs({ head: { branch: 'main', oid: 'a0' } }))).toBe(true);
+  });
+});
+
+describe('refTree', () => {
+  const tree = (names: string[]) => refTree(names, (n) => n);
+  // Folders as "name/[...]", refs as their last segment.
+  const shape = (nodes: RefNode<string>[]): unknown[] =>
+    nodes.map((n) => (n.kind === 'folder' ? { [`${n.name}/`]: shape(n.children) } : n.name));
+
+  it('lists names without a slash as they are', () => {
+    expect(shape(tree(['main', 'dev']))).toEqual(['main', 'dev']);
+  });
+
+  it('groups names by their slash-separated parts, in the order they come', () => {
+    expect(shape(tree(['predev4', 'release/v4.6', 'preuat', 'release/v4.7', 'feat/a/b', 'feat/c']))).toEqual([
+      'predev4', { 'release/': ['v4.6', 'v4.7'] }, 'preuat', { 'feat/': [{ 'a/': ['b'] }, 'c'] },
+    ]);
+  });
+
+  it('keeps the item and gives folders their full path', () => {
+    const [f] = refTree([{ n: 'release/v4.7' }], (x) => x.n);
+    expect(f.kind === 'folder' && f.path).toBe('release');
+    const leaf = f.kind === 'folder' ? f.children[0] : f;
+    expect(leaf.kind === 'ref' && leaf.item).toEqual({ n: 'release/v4.7' });
   });
 });
