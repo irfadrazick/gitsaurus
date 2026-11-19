@@ -69,6 +69,7 @@
     const paths = [...session.openRepos];
     untrack(() => {
       for (const p of [...health.dirty.keys(), ...health.missing]) if (!paths.includes(p)) health.forget(p);
+      repo.retain(paths);
       for (const p of paths) if (!health.dirty.has(p) && !health.missing.has(p)) health.check(p);
     });
   });

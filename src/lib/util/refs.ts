@@ -1,4 +1,4 @@
-import type { Pill, RefLabel } from '../types';
+import type { Pill, RefLabel, Refs } from '../types';
 
 /** Collapse ref labels into pills: a remote `origin/x` merges into local `x` when both exist. */
 export function groupPills(refs: RefLabel[]): Pill[] {
@@ -62,6 +62,22 @@ export function pillsShown(widths: number[], moreWidth: (n: number) => number, r
     if (total <= room) return k;
   }
   return Math.min(n, 1);
+}
+
+/** What the commit graph is drawn from: it reads the log of HEAD, the branches, the remote branches and the tags. */
+function graphKey(r: Refs): string {
+  return JSON.stringify([
+    r.head.branch,
+    r.head.oid,
+    r.local.map((b) => [b.name, b.oid]),
+    r.remote.map((b) => [b.fullName, b.oid]),
+    r.tags.map((t) => [t.name, t.oid]),
+  ]);
+}
+
+/** Whether the graph built from `before` may differ from one built from `after` (stashes and worktrees aren't drawn). */
+export function graphRefsChanged(before: Refs, after: Refs): boolean {
+  return graphKey(before) !== graphKey(after);
 }
 
 /** A branch list as folders: `release/v4.7` is the ref `v4.7` inside the folder `release`. */

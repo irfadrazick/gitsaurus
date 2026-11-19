@@ -2,6 +2,7 @@ import { SvelteMap } from 'svelte/reactivity';
 import * as api from '../api';
 import type { ChangeKind, GraphCommit, GraphSummary, Refs, RepoState } from '../types';
 import { pagesWithin } from '../util/graphGeometry';
+import { graphRefsChanged } from '../util/refs';
 import { leavesConflictView } from '../util/liveDiff';
 import { toasts } from './toasts.svelte';
 
@@ -22,6 +23,21 @@ export type Centre =
 const emptyState = (): RepoState => ({ head: { branch: null, oid: null }, operation: null, files: [] });
 const emptyRefs = (): Refs => ({ head: { branch: null, oid: null }, local: [], remote: [], remotes: [], tags: [], stashes: [], worktrees: [] });
 const emptySummary = (): GraphSummary => ({ total: 0, maxLanes: 0, headIndex: null });
+
+/**
+ * What a repository looked like when you left it, so switching back shows it at once. Only the
+ * graph pages in view are kept (others reload from the backend's graph cache as you scroll).
+ */
+interface Snapshot {
+  refs: Refs;
+  state: RepoState;
+  summary: GraphSummary;
+  pages: Map<number, GraphCommit[]>;
+  shown: number[];
+  selection: Selection;
+  centre: Centre;
+  scrollTop: number;
+}
 
 function report(title: string, e: unknown) {
   const err = e as { message?: string; stderr?: string };
@@ -45,25 +61,43 @@ class RepoStore {
   stateVersion = $state(0);
   /** Request for the graph to scroll to a row; `n` makes repeated requests for one index distinct. */
   reveal = $state<{ index: number; n: number } | null>(null);
+  /** The graph's scroll offset. GraphView keeps it current and applies it on a switch; not reactive. */
+  scrollTop = 0;
 
   #token = 0;
   #inflight = new Set<number>();
   /** Pages the graph view shows; a reload re-fetches these before swapping, so the rows never go blank. */
   #shown: number[] = [];
   #reloadSeq = 0;
+  /** Repositories switched away from this session, by path. */
+  #saved = new Map<string, Snapshot>();
 
-  /** Switch to `path` (null clears) and load refs, state and graph summary. */
+  /**
+   * Switch to `path` (null clears). A repository seen before this session comes back as it was left,
+   * then is checked for changes in the background; otherwise its refs, state and graph summary load.
+   */
   async open(path: string | null) {
     this.#token++;
+    // A repository still loading has nothing worth keeping.
+    if (this.path && !this.loading) this.#saved.set(this.path, this.#snapshot());
     this.path = path;
-    this.pages.clear();
     this.#inflight.clear();
+    this.loading = false;
+    const saved = path ? this.#saved.get(path) : undefined;
+    if (path && saved) {
+      this.#saved.delete(path);
+      this.#restore(saved);
+      await this.#revalidate(path);
+      return;
+    }
+    this.pages.clear();
     this.#shown = [];
     this.selection = null;
     this.centre = { kind: 'graph' };
     this.refs = emptyRefs();
     this.state = emptyState();
     this.summary = emptySummary();
+    this.scrollTop = 0;
     if (!path) return;
     this.loading = true;
     const token = this.#token;
@@ -78,6 +112,61 @@ class RepoStore {
       if (token === this.#token) report('Could not open repository', e);
     } finally {
       if (token === this.#token) this.loading = false;
+    }
+  }
+
+  /** Drop what is kept for repositories that are no longer open. */
+  retain(open: string[]) {
+    for (const p of [...this.#saved.keys()]) if (!open.includes(p)) this.#saved.delete(p);
+  }
+
+  #snapshot(): Snapshot {
+    const pages = new Map<number, GraphCommit[]>();
+    for (const n of this.#shown) {
+      const rows = this.pages.get(n);
+      if (rows) pages.set(n, rows);
+    }
+    return {
+      refs: this.refs,
+      state: this.state,
+      summary: this.summary,
+      pages,
+      shown: [...this.#shown],
+      selection: this.selection,
+      centre: this.centre,
+      scrollTop: this.scrollTop,
+    };
+  }
+
+  #restore(s: Snapshot) {
+    this.refs = s.refs;
+    this.state = s.state;
+    this.summary = s.summary;
+    this.pages.clear();
+    for (const [n, rows] of s.pages) this.pages.set(n, rows);
+    this.#shown = s.shown;
+    this.selection = s.selection;
+    this.centre = s.centre;
+    this.scrollTop = s.scrollTop;
+    this.graphVersion++;
+    this.stateVersion++;
+  }
+
+  /**
+   * After switching back: re-read the refs and working state (both cheap), and rebuild the graph
+   * only when something it is drawn from moved while the repository was out of view.
+   */
+  async #revalidate(path: string) {
+    const token = this.#token;
+    try {
+      const [refs, st] = await Promise.all([api.listRefs(path), api.repoState(path)]);
+      if (token !== this.#token) return;
+      const graphStale = graphRefsChanged(this.refs, refs);
+      this.refs = refs;
+      this.#setState(st);
+      if (graphStale) await this.reloadGraph();
+    } catch (e) {
+      if (token === this.#token) report('Refresh failed', e);
     }
   }
 
