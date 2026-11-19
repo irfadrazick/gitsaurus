@@ -2,12 +2,15 @@
   import type { Pill } from '../../types';
 
   // One ref pill, or the "+N" chip when `more` is set. The lane colour comes from `--c` on an ancestor.
-  // `full` lifts the width cap, for the hover overlay that shows a truncated name in full.
-  let { pill, more, k, full = false }: { pill?: Pill; more?: number; k?: number; full?: boolean } = $props();
+  // `full` lifts the width cap, for the hover overlay that shows a truncated name in full; `active`
+  // marks the pill whose context menu is open (styled by the overlay).
+  let { pill, more, k, full = false, active = false }: {
+    pill?: Pill; more?: number; k?: number; full?: boolean; active?: boolean;
+  } = $props();
 </script>
 
 {#if pill}
-  <span class="pill" class:head={pill.isHead} class:full data-pill={k}>
+  <span class="pill" class:head={pill.isHead} class:full class:active data-pill={k}>
     {#if pill.isHead}
       <svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7" /></svg>
     {:else if pill.tag}

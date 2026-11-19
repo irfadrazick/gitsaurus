@@ -10,10 +10,11 @@
   //   first one in its place, growing downwards (upwards when there's no room). No panel: the pills
   //   float on their own shadows. The
   //   pointer can move into it; its pills carry `data-pill={k}` (index into `pills`) for GraphView's
-  //   handlers, passed in with the rest of the element attributes.
+  //   handlers, passed in with the rest of the element attributes. `active` lights the pill whose
+//   context menu is open.
   let {
-    pills, color, mode, anchor, ...rest
-  }: { pills: Pill[]; color: string; mode: 'expand' | 'list'; anchor: DOMRect } & HTMLAttributes<HTMLDivElement> = $props();
+    pills, color, mode, anchor, active, ...rest
+  }: { pills: Pill[]; color: string; mode: 'expand' | 'list'; anchor: DOMRect; active?: number } & HTMLAttributes<HTMLDivElement> = $props();
 
   const EDGE = 8;
   let w = $state(0);
@@ -38,7 +39,7 @@
   bind:offsetHeight={h}
 >
   {#each pills as p, k (p.name + k)}
-    <RefPill pill={p} k={k} full />
+    <RefPill pill={p} k={k} full active={k === active} />
   {/each}
 </div>
 
@@ -58,7 +59,8 @@
     gap: 3px;
     pointer-events: auto;
   }
-  .list :global(.pill:hover) {
+  .list :global(.pill:hover),
+  .list :global(.pill.active) {
     filter: brightness(1.2);
   }
 </style>

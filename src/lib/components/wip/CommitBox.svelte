@@ -56,6 +56,8 @@
       return true as const;
     });
     if (!ok) return;
+    // The diff open in the centre was of a change just committed: go back to the graph.
+    if (repo.path === path) repo.showGraph();
     drafts.delete(path);
     summary = '';
     description = '';
