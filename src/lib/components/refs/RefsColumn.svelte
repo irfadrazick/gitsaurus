@@ -70,6 +70,13 @@
     runOp('Checkout', () => api.checkout(path, b.name, 'local'));
   }
 
+  /** Checks out the local branch of the same name, creating it to track `b` if there is none. */
+  function checkoutRemote(b: RemoteBranch) {
+    if (!repo.path || refs.local.some((l) => l.isHead && l.name === b.name)) return;
+    const path = repo.path;
+    runOp('Checkout', () => api.checkout(path, b.fullName, 'remote'));
+  }
+
   function showWorktree(e: MouseEvent, w: Worktree) {
     e.preventDefault();
     const path = repo.path;
@@ -180,6 +187,7 @@
               title={b.fullName}
               onclick={() => repo.revealCommit(b.oid)}
               onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(b.oid)}
+              ondblclick={() => checkoutRemote(b)}
               oncontextmenu={(e) => show(e, remoteCtx(b), remoteBranchMenu)}
             >
               <span class="check"></span>

@@ -2,7 +2,7 @@
   import { onMount, tick, untrack } from 'svelte';
   import * as api from '../../api';
   import { performMenuAction, type ActionContext } from '../../state/actions';
-  import { openMenu } from '../../state/contextMenu.svelte';
+  import { contextMenu, openMenu } from '../../state/contextMenu.svelte';
   import { PAGE_SIZE, repo } from '../../state/repo.svelte';
   import { ui } from '../../state/ui.svelte';
   import type { GraphCommit, Pill } from '../../types';
@@ -249,6 +249,8 @@
   const PEEK_GRACE = 200;
   let peek = $state<{
     pills: Pill[]; color: string; mode: 'expand' | 'list'; anchor: DOMRect; index: number;
+    /** The pill whose context menu is open: the list stays up, that pill lit, until the menu closes. */
+    menuFor?: number;
   } | null>(null);
   let peekEl: Element | null = null;
   let peekTimer: ReturnType<typeof setTimeout> | undefined;
@@ -263,6 +265,7 @@
 
   /** Keep the shown "+N" list up a moment (the pointer may be heading into it), or hide anything else now. */
   function leavePeek() {
+    if (peek?.menuFor !== undefined) return;
     if (peek?.mode !== 'list') return hidePeek();
     clearTimeout(graceTimer);
     graceTimer = setTimeout(hidePeek, PEEK_GRACE);
@@ -292,6 +295,7 @@
   }
 
   function onPointerOver(e: PointerEvent) {
+    if (peek?.menuFor !== undefined) return;
     // In a row with hidden pills, any pill or the chip opens the list of them all.
     const hit = (e.target as Element).closest<HTMLElement>('[data-pill], .more');
     const el = hit?.closest<HTMLElement>('[data-overflow]') ?? hit;
@@ -310,6 +314,7 @@
   }
 
   function onPeekLeave(e: PointerEvent) {
+    if (peek?.menuFor !== undefined) return;
     if (!peekEl?.contains(e.relatedTarget as Node | null)) hidePeek();
   }
 
@@ -330,12 +335,21 @@
   function onPeekContextMenu(e: MouseEvent) {
     e.preventDefault();
     const hit = peekPill(e);
-    hidePeek();
-    if (!hit || !repo.path) return;
+    if (!hit || !repo.path || !peek) return hidePeek();
+    clearTimeout(graceTimer);
+    peek = { ...peek, menuFor: peek.pills.indexOf(hit.pill) };
     selectIndex(hit.index);
     const { ctx, items } = pillMenu(hit.pill, hit.c);
     openMenu(e.clientX, e.clientY, items(ctx), (id) => performMenuAction(id, ctx));
   }
+
+  // A list kept up for its pill's menu goes when the menu closes.
+  $effect(() => {
+    if (contextMenu.current) return;
+    untrack(() => {
+      if (peek?.menuFor !== undefined) hidePeek();
+    });
+  });
 
   // The anchor rect goes stale when the list scrolls or changes, or another repository is shown.
   $effect(() => {
@@ -458,6 +472,7 @@
       color={peek.color}
       mode={peek.mode}
       anchor={peek.anchor}
+      active={peek.menuFor}
       role={peek.mode === 'list' ? 'group' : undefined}
       aria-label={peek.mode === 'list' ? 'More branches and tags' : undefined}
       aria-hidden={peek.mode === 'expand' ? 'true' : undefined}
