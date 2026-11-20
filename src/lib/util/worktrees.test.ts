@@ -11,7 +11,7 @@ const ids = (w: Worktree) => worktreeMenu(w).map((i) => (i.disabled ? `(${i.id})
 
 it('a linked worktree can be opened, shown, copied and removed', () => {
   const m = worktreeMenu(wt());
-  expect(m.map((i) => i.label)).toEqual(['Open', 'Show in Finder', 'Copy path', 'Remove worktree…']);
+  expect(m.map((i) => i.label)).toEqual(['Open', 'Show in Finder', 'Copy path', 'Remove worktree']);
   const remove = m.find((i) => i.id === 'remove')!;
   expect(remove.danger).toBe(true);
   expect(remove.separatorBefore).toBe(true);

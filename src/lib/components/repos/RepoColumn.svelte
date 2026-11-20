@@ -120,8 +120,8 @@
       <span class="update-version">Version {ready} is ready</span>
     </button>
   {/if}
-  <button class="open" onclick={openRepoDialog} title="Open repo… (⌘O)" aria-label="Open repo">
-    <Icon name="plus" size={12} stroke={1.8} />{#if !session.reposCollapsed}<span>Open repo…</span>{/if}
+  <button class="open" onclick={openRepoDialog} title="Open repo (⌘O)" aria-label="Open repo">
+    <Icon name="plus" size={12} stroke={1.8} />{#if !session.reposCollapsed}<span>Open repo</span>{/if}
   </button>
 </div>
 

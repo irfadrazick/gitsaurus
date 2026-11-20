@@ -5,6 +5,7 @@ import type { PullMode } from '../types';
 import { pullPlan } from '../util/pull';
 import { forcePushWarning } from '../util/push';
 import { explainRefName } from '../util/refName';
+import { joinNames } from '../util/marks';
 import { defaultRemote } from '../util/watchDiff';
 import { actionFor, defaultUpstream, isNotMerged, remoteCopyToDelete, type MenuKind } from '../util/actionTable';
 import { choose, confirm, prompt } from './modal.svelte';
@@ -148,6 +149,88 @@ async function deleteBranch(c: ActionContext) {
     confirmLabel: 'Force delete',
   });
   if (force) await runOp('Delete branch', () => api.deleteBranch(c.repo, c.name, true, remote));
+}
+
+const plural = (n: number, one: string, many = `${one}es`) => `${n} ${n === 1 ? one : many}`;
+
+/**
+ * Runs `del` for each name, then throws one error naming those that failed (after a refresh, so
+ * the ones that went are gone from the lists). Names git refused as not fully merged go into
+ * `notMerged`, for a force delete; when that is all of them, `none` is thrown (the caller claims
+ * it: no toast, as the force dialog follows).
+ */
+async function deleteEach(names: string[], del: (name: string) => Promise<void>, notMerged: string[], none: object) {
+  const failed: string[] = [];
+  for (const name of names) {
+    try {
+      await del(name);
+    } catch (e) {
+      if (isNotMerged(e)) notMerged.push(name);
+      else failed.push(`${name}: ${(e as { stderr?: string } | null)?.stderr?.trim() || message(e)}`);
+    }
+  }
+  if (failed.length) {
+    await repo.refresh(['Git', 'Worktree']);
+    throw { kind: 'failed', message: failed.join('\n') };
+  }
+  if (notMerged.length === names.length) throw none;
+}
+
+/** Deletes several local branches; the checked-out one is left out. Like deleteBranch, with one dialog for them all. */
+export async function deleteBranches(path: string, names: string[]) {
+  const head = repo.refs.local.find((b) => b.isHead)?.name;
+  const todo = names.filter((n) => n !== head);
+  if (!todo.length) return;
+  const kept = head && names.includes(head) ? ` ${head} is checked out and is kept.` : '';
+  const ok = await confirm({
+    title: `Delete ${plural(todo.length, 'branch')}?`,
+    body: `The local ${todo.length === 1 ? 'branch' : 'branches'} ${joinNames(todo)} will be deleted.${kept}`,
+    danger: true,
+    confirmLabel: 'Delete',
+  });
+  if (!ok) return;
+  // As for one branch: offer to delete the remote copies, where the upstream is <remote>/<same name>.
+  const remoteBranches = repo.refs.remote.map((b) => b.fullName);
+  const copies = new Map<string, string>();
+  for (const n of todo) {
+    const r = remoteCopyToDelete(n, repo.refs.local.find((b) => b.name === n)?.upstream, repo.refs.remotes, remoteBranches);
+    if (r) copies.set(n, r);
+  }
+  if (copies.size) {
+    const also = await confirm({
+      title: `Also delete ${copies.size === 1 ? 'its copy' : `${copies.size} of them`} on the remote?`,
+      body: `This runs git push --delete for ${joinNames([...copies].map(([n, r]) => `${r}/${n}`))}, removing ${copies.size === 1 ? 'it' : 'them'} for everyone who uses the remote.`,
+      danger: true,
+      confirmLabel: 'Delete remote branches too',
+    });
+    if (!also) copies.clear();
+  }
+  const none = {};
+  const del = (force: boolean) => (n: string) => api.deleteBranch(path, n, force, copies.get(n));
+  const left: string[] = [];
+  await runOp('Delete branches', () => deleteEach(todo, del(false), left, none), { onError: (e) => e === none });
+  if (!left.length || repo.path !== path) return;
+  const force = await confirm({
+    title: 'Force delete?',
+    body: `${joinNames(left)} ${left.length === 1 ? 'is' : 'are'} not fully merged. Their unmerged commits may be lost.`,
+    danger: true,
+    confirmLabel: 'Force delete',
+  });
+  if (force) await runOp('Delete branches', () => deleteEach(left, del(true), [], {}));
+}
+
+/** Deletes several branches on their remotes (Remote rows, given as `origin/x`); local branches are kept. */
+export async function deleteRemoteBranches(path: string, fullNames: string[]) {
+  const rbs = repo.refs.remote.filter((b) => fullNames.includes(b.fullName));
+  if (!rbs.length) return;
+  const remotes = [...new Set(rbs.map((b) => b.remote))];
+  const ok = await confirm({
+    title: `Delete ${plural(rbs.length, 'branch')} on ${remotes.length === 1 ? remotes[0] : 'their remotes'}?`,
+    body: `This runs git push --delete for ${joinNames(rbs.map((b) => b.fullName))}, removing them for everyone who uses ${joinNames(remotes)}. Local branches that track them are kept and will show as gone.`,
+    danger: true,
+    confirmLabel: 'Delete on remote',
+  });
+  if (ok) await runOp('Delete remote branches', () => deleteEach(rbs.map((b) => b.fullName), (n) => api.deleteRemoteBranch(path, n), [], {}));
 }
 
 /** Deletes a branch on its remote (the menu on a Remote row); local branches are kept. */

@@ -172,7 +172,7 @@
         <div class="ph">
           <p class="ph-title">No repository open</p>
           <p class="ph-hint">Open a local git repository to see its history.</p>
-          <button class="primary" type="button" onclick={openRepoDialog}>Open repository… <span class="kbd">⌘O</span></button>
+          <button class="primary" type="button" onclick={openRepoDialog}>Open repository <span class="kbd">⌘O</span></button>
         </div>
       {/if}
     {/snippet}
