@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { branchMenu, commitMenu, stashMenu, tagMenu, type MenuContext } from './menus';
+import { branchMenu, commitMenu, marksMenu, stashMenu, tagMenu, type MenuContext } from './menus';
 
 const ctx = (over: Partial<MenuContext> = {}): MenuContext => ({
   name: 'feat', current: 'main', isHeadBranch: false, detached: false, hasUpstream: false, ...over,
@@ -9,9 +9,9 @@ const labels = (m: { label: string }[]) => m.map((i) => i.label);
 it('branch menu for non-head branch', () => {
   const m = branchMenu(ctx());
   expect(labels(m)).toEqual([
-    'Pull (fast-forward if possible)', 'Push', 'Set upstream…', 'Merge feat into main', 'Rebase main onto feat',
-    'Checkout feat', 'Create branch here…', 'Cherry-pick commit', 'Reset main to this commit', 'Revert commit',
-    'Rename feat…', 'Delete feat', 'Copy branch name', 'Copy commit SHA', 'Create tag here…', 'Create annotated tag here…',
+    'Pull (fast-forward if possible)', 'Push', 'Set upstream', 'Merge feat into main', 'Rebase main onto feat',
+    'Checkout feat', 'Create branch here', 'Cherry-pick commit', 'Reset main to this commit', 'Revert commit',
+    'Rename feat', 'Delete feat', 'Copy branch name', 'Copy commit SHA', 'Create tag here', 'Create annotated tag here',
   ]);
   const reset = m.find((i) => i.id === 'reset')!;
   expect(reset.submenu!.map((i) => i.label)).toEqual([
@@ -47,7 +47,7 @@ it('tag menu with a detached HEAD: merge and rebase need a branch', () => {
 
 it('tag and stash menus', () => {
   expect(labels(tagMenu(ctx({ name: 'v1' })))).toEqual([
-    'Merge v1 into main', 'Rebase main onto v1', 'Checkout v1', 'Create branch here…', 'Cherry-pick commit',
+    'Merge v1 into main', 'Rebase main onto v1', 'Checkout v1', 'Create branch here', 'Cherry-pick commit',
     'Reset main to this commit', 'Revert commit', 'Push tag', 'Copy tag name', 'Copy commit SHA', 'Delete v1',
   ]);
   expect(labels(stashMenu(ctx()))).toEqual(['Apply', 'Pop', 'Delete']);
@@ -55,4 +55,14 @@ it('tag and stash menus', () => {
   expect(tagMenu(ctx({ name: 'v1' })).find((i) => i.id === 'delete')!.separatorBefore).toBe(true);
   expect(stashMenu(ctx()).find((i) => i.id === 'stashDrop')!.separatorBefore).toBe(true);
   expect(stashMenu(ctx()).find((i) => i.id === 'stashDrop')!.danger).toBe(true);
+});
+
+it('marksMenu counts the branches it deletes, and disables Delete when only the checked-out one is marked', () => {
+  expect(marksMenu('local', 3).map((i) => [i.id, i.label, !!i.disabled])).toEqual([
+    ['copyNames', 'Copy branch names', false],
+    ['deleteMarked', 'Delete 3 branches', false],
+  ]);
+  expect(marksMenu('local', 1)[1].label).toBe('Delete 1 branch');
+  expect(marksMenu('local', 0)[1].disabled).toBe(true);
+  expect(marksMenu('remote', 2)[1].label).toBe('Delete 2 branches on remote');
 });

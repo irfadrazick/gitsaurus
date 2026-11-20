@@ -109,3 +109,16 @@ export function refTree<T>(items: T[], nameOf: (t: T) => string): RefNode<T>[] {
   }
   return root;
 }
+
+/** The refs of a tree in the order they are listed, leaving out the contents of closed folders. */
+export function visibleRefs<T>(nodes: RefNode<T>[], isOpen: (path: string) => boolean): T[] {
+  const out: T[] = [];
+  const walk = (level: RefNode<T>[]) => {
+    for (const n of level) {
+      if (n.kind === 'ref') out.push(n.item);
+      else if (isOpen(n.path)) walk(n.children);
+    }
+  };
+  walk(nodes);
+  return out;
+}

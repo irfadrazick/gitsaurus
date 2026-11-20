@@ -38,8 +38,8 @@ const resetItem = (current: string | null): MenuItem => ({
 });
 
 const tagItems = (): MenuItem[] => [
-  { id: 'createTag', label: 'Create tag here…', separatorBefore: true },
-  { id: 'createAnnotatedTag', label: 'Create annotated tag here…' },
+  { id: 'createTag', label: 'Create tag here', separatorBefore: true },
+  { id: 'createAnnotatedTag', label: 'Create annotated tag here' },
 ];
 
 export function branchMenu(c: MenuContext): MenuItem[] {
@@ -47,7 +47,7 @@ export function branchMenu(c: MenuContext): MenuItem[] {
   const items: MenuItem[] = [
     { id: 'pull', label: 'Pull (fast-forward if possible)', disabled: c.detached || !c.hasUpstream },
     { id: 'push', label: 'Push', disabled: c.detached },
-    { id: 'setUpstream', label: 'Set upstream…', disabled: c.detached },
+    { id: 'setUpstream', label: 'Set upstream', disabled: c.detached },
   ];
   if (!c.isHeadBranch) {
     items.push(
@@ -57,11 +57,11 @@ export function branchMenu(c: MenuContext): MenuItem[] {
     );
   }
   items.push(
-    { id: 'createBranch', label: 'Create branch here…', separatorBefore: c.isHeadBranch },
+    { id: 'createBranch', label: 'Create branch here', separatorBefore: c.isHeadBranch },
     { id: 'cherryPick', label: 'Cherry-pick commit' },
     resetItem(c.current),
     { id: 'revert', label: 'Revert commit' },
-    { id: 'rename', label: `Rename ${c.name}…`, separatorBefore: true },
+    { id: 'rename', label: `Rename ${c.name}`, separatorBefore: true },
   );
   if (!c.isHeadBranch) items.push({ id: 'delete', label: `Delete ${c.name}`, danger: true });
   items.push(
@@ -76,7 +76,7 @@ export function branchMenu(c: MenuContext): MenuItem[] {
 export function commitMenu(c: MenuContext): MenuItem[] {
   return [
     { id: 'checkout', label: 'Checkout this commit' },
-    { id: 'createBranch', label: 'Create branch here…' },
+    { id: 'createBranch', label: 'Create branch here' },
     { id: 'cherryPick', label: 'Cherry-pick commit', separatorBefore: true },
     resetItem(c.current),
     { id: 'revert', label: 'Revert commit' },
@@ -91,7 +91,7 @@ export function tagMenu(c: MenuContext): MenuItem[] {
     { id: 'merge', label: `Merge ${c.name} into ${cur}`, disabled: c.detached },
     { id: 'rebase', label: `Rebase ${cur} onto ${c.name}`, disabled: c.detached },
     { id: 'checkout', label: `Checkout ${c.name}` },
-    { id: 'createBranch', label: 'Create branch here…', separatorBefore: true },
+    { id: 'createBranch', label: 'Create branch here', separatorBefore: true },
     { id: 'cherryPick', label: 'Cherry-pick commit' },
     resetItem(c.current),
     { id: 'revert', label: 'Revert commit' },
@@ -115,7 +115,7 @@ export function remoteBranchMenu(c: MenuContext): MenuItem[] {
   return [
     { id: 'checkout', label: `Checkout ${c.name}` },
     { id: 'copyBranchName', label: 'Copy branch name', separatorBefore: true },
-    { id: 'delete', label: 'Delete on remote…', danger: true, separatorBefore: true },
+    { id: 'delete', label: 'Delete on remote', danger: true, separatorBefore: true },
   ];
 }
 
@@ -127,6 +127,20 @@ export function worktreeMenu(w: { isMain: boolean; isCurrent: boolean; missing: 
     { id: 'copyPath', label: 'Copy path' },
     w.missing
       ? { id: 'prune', label: 'Clean up', separatorBefore: true }
-      : { id: 'remove', label: 'Remove worktree…', danger: true, separatorBefore: true, disabled: w.isMain || w.isCurrent },
+      : { id: 'remove', label: 'Remove worktree', danger: true, separatorBefore: true, disabled: w.isMain || w.isCurrent },
+  ];
+}
+
+/**
+ * Menu for several marked branch rows. `deletable` leaves out the checked-out branch, which
+ * can't be deleted; remote rows are deleted on their remote.
+ */
+export function marksMenu(kind: 'local' | 'remote', deletable: number): MenuItem[] {
+  const n = `${deletable} ${deletable === 1 ? 'branch' : 'branches'}`;
+  return [
+    { id: 'copyNames', label: 'Copy branch names' },
+    kind === 'local'
+      ? { id: 'deleteMarked', label: `Delete ${n}`, danger: true, separatorBefore: true, disabled: deletable === 0 }
+      : { id: 'deleteMarked', label: `Delete ${n} on remote`, danger: true, separatorBefore: true },
   ];
 }

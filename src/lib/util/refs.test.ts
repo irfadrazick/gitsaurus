@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { RefLabel, Refs } from '../types';
-import { graphRefsChanged, groupPills, pillsShown, refTree, rowPills, type RefNode } from './refs';
+import { graphRefsChanged, groupPills, pillsShown, refTree, rowPills, visibleRefs, type RefNode } from './refs';
 
 it('merges local and remote of the same branch', () => {
   const refs: RefLabel[] = [
@@ -105,5 +105,14 @@ describe('refTree', () => {
     expect(f.kind === 'folder' && f.path).toBe('release');
     const leaf = f.kind === 'folder' ? f.children[0] : f;
     expect(leaf.kind === 'ref' && leaf.item).toEqual({ n: 'release/v4.7' });
+  });
+});
+
+describe('visibleRefs', () => {
+  it('lists refs in order and skips the contents of closed folders', () => {
+    const t = refTree(['a', 'feat/x', 'feat/sub/y', 'b', 'fix/z'], (n) => n);
+    expect(visibleRefs(t, () => true)).toEqual(['a', 'feat/x', 'feat/sub/y', 'b', 'fix/z']);
+    expect(visibleRefs(t, (p) => p !== 'feat/sub')).toEqual(['a', 'feat/x', 'b', 'fix/z']);
+    expect(visibleRefs(t, (p) => p !== 'feat')).toEqual(['a', 'b', 'fix/z']);
   });
 });

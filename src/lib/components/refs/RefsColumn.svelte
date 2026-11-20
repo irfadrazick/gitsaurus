@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import Icon, { type IconName } from '../Icon.svelte';
-  import { performMenuAction, type ActionContext } from '../../state/actions';
+  import { copyText, deleteBranches, deleteRemoteBranches, performMenuAction, type ActionContext } from '../../state/actions';
   import { openMenu } from '../../state/contextMenu.svelte';
   import { runOp } from '../../state/ops';
   import { repo } from '../../state/repo.svelte';
@@ -8,8 +9,9 @@
   import { openWorktree, performWorktreeAction } from '../../state/worktrees';
   import type { Branch, RemoteBranch, Stash, Tag, Worktree } from '../../types';
   import type { MenuKind } from '../../util/actionTable';
-  import { branchMenu, remoteBranchMenu, stashMenu, tagMenu, worktreeMenu, type MenuItem } from '../../util/menus';
-  import { refTree, type RefNode } from '../../util/refs';
+  import { branchMenu, marksMenu, remoteBranchMenu, stashMenu, tagMenu, worktreeMenu, type MenuItem } from '../../util/menus';
+  import { clickMarks, NO_MARKS, type Marks } from '../../util/marks';
+  import { refTree, visibleRefs, type RefNode } from '../../util/refs';
   import { checkedOutElsewhere, worktreeLabel } from '../../util/worktrees';
 
   let filter = $state('');
@@ -40,6 +42,78 @@
   const elsewhere = $derived(checkedOutElsewhere(refs.worktrees));
 
   const selectedOid = $derived(repo.selection?.kind === 'commit' ? repo.selection.oid : null);
+
+  /** Indent per folder level: a folder's contents line up with its name, past the chevron and icon. */
+  const INDENT = 18;
+  const toggle = (k: string) => (collapsed[k] = !collapsed[k]);
+  const open = (k: string) => !collapsed[k] || !!q;
+
+  // Marked branch rows, for acting on several at once: ⌘-click and ⇧-click, as in Finder. Local
+  // and remote rows are marked separately; marking in one list drops the marks in the other.
+  type Kind = 'local' | 'remote';
+  let marks = $state<Marks & { kind: Kind }>({ kind: 'local', ...NO_MARKS });
+  // The rows as listed (closed folders and the filter hide some); a range is taken from these.
+  const order = $derived({
+    local: open('local') ? visibleRefs(localTree, (p) => open(`local/${p}`)).map((b) => b.name) : [],
+    remote: open('remote')
+      ? remoteGroups.flatMap((g) => visibleRefs(g.tree, (p) => open(`remote/${g.remote}/${p}`)).map((b) => b.fullName))
+      : [],
+  });
+  // Only rows still listed count: a deleted, filtered-out or folded-away branch is never acted on.
+  const marked = $derived(marks.names.filter((n) => order[marks.kind].includes(n)));
+  // One marked row is just the clicked one; the commit highlight shows it.
+  const multi = $derived(marked.length > 1);
+  const isMarked = (kind: Kind, name: string) => multi && marks.kind === kind && marked.includes(name);
+  const clearMarks = () => (marks = { ...marks, names: [] });
+
+  // Selecting another commit (in the graph, say) drops a multiple selection here.
+  $effect(() => {
+    void selectedOid;
+    untrack(() => multi && clearMarks());
+  });
+
+  /** A click on a branch row: a plain click also shows its commit; ⌘ and ⇧ only mark. */
+  function clickRow(e: MouseEvent, kind: Kind, name: string, oid: string) {
+    const mod = { meta: e.metaKey, shift: e.shiftKey };
+    const from: Marks = marks.kind === kind ? { names: marked, anchor: marks.anchor } : NO_MARKS;
+    marks = { kind, ...clickMarks(from, name, order[kind], mod) };
+    if (!mod.meta && !mod.shift) repo.revealCommit(oid);
+  }
+
+  const headName = $derived(refs.head.branch);
+
+  function deleteMarked() {
+    const path = repo.path;
+    if (!path) return;
+    const names = [...marked];
+    if (marks.kind === 'local') deleteBranches(path, names);
+    else deleteRemoteBranches(path, names);
+  }
+
+  /** Right-click on a branch row: the menu for the marked rows when it is one of them, else its own menu. */
+  function rowMenu(e: MouseEvent, kind: Kind, name: string, single: () => void) {
+    if (!isMarked(kind, name)) {
+      if (multi) clearMarks();
+      single();
+      return;
+    }
+    e.preventDefault();
+    const deletable = kind === 'local' ? marked.filter((n) => n !== headName).length : marked.length;
+    const names = [...marked];
+    openMenu(e.clientX, e.clientY, marksMenu(kind, deletable), (id) => {
+      if (id === 'copyNames') copyText(names.join('\n'));
+      else if (id === 'deleteMarked') deleteMarked();
+    });
+  }
+
+  function rowKey(e: KeyboardEvent, kind: Kind, name: string, oid: string) {
+    if (e.key === 'Enter') repo.revealCommit(oid);
+    else if (e.key === 'Escape' && multi) clearMarks();
+    else if ((e.key === 'Backspace' || e.key === 'Delete') && isMarked(kind, name)) {
+      e.preventDefault();
+      deleteMarked();
+    }
+  }
 
   function ctxFor(menu: MenuKind, name: string, extra: Partial<ActionContext> = {}): ActionContext {
     return {
@@ -89,10 +163,6 @@
     return w ? `${base}\nChecked out in worktree ${w.name}` : base;
   }
 
-  /** Indent per folder level: a folder's contents line up with its name, past the chevron and icon. */
-  const INDENT = 18;
-  const toggle = (k: string) => (collapsed[k] = !collapsed[k]);
-  const open = (k: string) => !collapsed[k] || !!q;
 </script>
 
 <div class="col">
@@ -148,16 +218,16 @@
             {@const b = n.item}
             <div
               class="row"
-              class:selected={selectedOid === b.oid}
+              class:selected={multi ? isMarked('local', b.name) : selectedOid === b.oid}
               class:head={b.isHead}
               style:padding-left="{8 + depth * INDENT}px"
               role="button"
               tabindex="0"
               title={branchTitle(b)}
-              onclick={() => repo.revealCommit(b.oid)}
-              onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(b.oid)}
-              ondblclick={() => checkout(b)}
-              oncontextmenu={(e) => show(e, branchCtx(b), branchMenu)}
+              onclick={(e) => clickRow(e, 'local', b.name, b.oid)}
+              onkeydown={(e) => rowKey(e, 'local', b.name, b.oid)}
+              ondblclick={(e) => !e.metaKey && !e.shiftKey && checkout(b)}
+              oncontextmenu={(e) => rowMenu(e, 'local', b.name, () => show(e, branchCtx(b), branchMenu))}
             >
               <span class="check">{#if b.isHead}<Icon name="check" size={12} stroke={2} />{/if}</span>
               <span class="name">{n.name}</span>
@@ -180,15 +250,15 @@
             {@const b = n.item}
             <div
               class="row"
-              class:selected={selectedOid === b.oid}
+              class:selected={multi ? isMarked('remote', b.fullName) : selectedOid === b.oid}
               style:padding-left="{8 + depth * INDENT}px"
               role="button"
               tabindex="0"
               title={b.fullName}
-              onclick={() => repo.revealCommit(b.oid)}
-              onkeydown={(e) => e.key === 'Enter' && repo.revealCommit(b.oid)}
-              ondblclick={() => checkoutRemote(b)}
-              oncontextmenu={(e) => show(e, remoteCtx(b), remoteBranchMenu)}
+              onclick={(e) => clickRow(e, 'remote', b.fullName, b.oid)}
+              onkeydown={(e) => rowKey(e, 'remote', b.fullName, b.oid)}
+              ondblclick={(e) => !e.metaKey && !e.shiftKey && checkoutRemote(b)}
+              oncontextmenu={(e) => rowMenu(e, 'remote', b.fullName, () => show(e, remoteCtx(b), remoteBranchMenu))}
             >
               <span class="check"></span>
               <span class="name">{n.name}</span>
@@ -220,7 +290,7 @@
           {#each tags as t (t.name)}
             <div
               class="row"
-              class:selected={selectedOid === t.oid}
+              class:selected={!multi && selectedOid === t.oid}
               role="button"
               tabindex="0"
               title={t.annotated ? `${t.name} (annotated)` : t.name}
@@ -261,7 +331,7 @@
           {#each worktrees as w (w.path)}
             <div
               class="row"
-              class:selected={!!w.oid && selectedOid === w.oid}
+              class:selected={!multi && !!w.oid && selectedOid === w.oid}
               class:head={w.isCurrent}
               class:missing={w.missing}
               role="button"
